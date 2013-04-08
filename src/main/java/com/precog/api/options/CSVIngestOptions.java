@@ -6,8 +6,8 @@ import java.util.Map;
 
 /**
  * Ingest options specific for CSV
- * User: gabriel
- * Date: 10/26/12
+ *
+ * @author Gabriel Claramunt <gabriel@precog.com>
  */
 public class CSVIngestOptions extends IngestOptions {
 

@@ -3,19 +3,24 @@ package com.precog.api.dto;
 import java.util.Map;
 
 /**
- * User Account info
- * <p/>
- * User: gabriel
- * Date: 10/26/12
+ * User Account details.
+ *
+ * @author Gabriel Claramunt <gabriel@precog.com>
  */
 public class AccountInfo {
     private String accountId;
     private String email;
-    private int accountCreationDate;
+    private String accountCreationDate;
     private String apiKey;
     private String rootPath;
-    private Map<String, String> plan;
+    private String plan;
 
+    /**
+     * Returns the account ID.
+     *
+     * The account ID is sometimes used in other requests, such as when
+     * ingesting data, to specify the <i>owner</i> of the data being ingested.
+     */
     public String getAccountId() {
         return accountId;
     }
@@ -24,6 +29,7 @@ public class AccountInfo {
         this.accountId = accountId;
     }
 
+    /** Returns the e-mail associated with the account. */
     public String getEmail() {
         return email;
     }
@@ -32,14 +38,21 @@ public class AccountInfo {
         this.email = email;
     }
 
-    public int getAccountCreationDate() {
+    /**
+     * Returns the date that the account was first created.
+     *
+     * TODO: This should be a Java Date. Account create date is returned as an
+     * ISO8601 string.
+     */
+    public String getAccountCreationDate() {
         return accountCreationDate;
     }
 
-    public void setAccountCreationDate(int accountCreationDate) {
+    public void setAccountCreationDate(String accountCreationDate) {
         this.accountCreationDate = accountCreationDate;
     }
 
+    /** Returns the API key associated with the account. */
     public String getApiKey() {
         return apiKey;
     }
@@ -48,6 +61,10 @@ public class AccountInfo {
         this.apiKey = apiKey;
     }
 
+    /**
+     * Returns the root path the account has ownership of. Typically, data is
+     * ingested to sub-paths of the root path.
+     */
     public String getRootPath() {
         return rootPath;
     }
@@ -56,11 +73,15 @@ public class AccountInfo {
         this.rootPath = rootPath;
     }
 
-    public Map<String, String> getPlan() {
+    /**
+     * Returns the plan the account is subscribed too. For example, if you are
+     * using a free beta account, then this would be "Free".
+     */
+    public String getPlan() {
         return plan;
     }
 
-    public void setPlan(Map<String, String> plan) {
+    public void setPlan(String plan) {
         this.plan = plan;
     }
 }

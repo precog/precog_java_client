@@ -11,7 +11,8 @@ import java.io.IOException;
 /**
  * A simple client for storing arbitrary records in the Precog database.
  *
- * @author knuttycombe
+ * @author Kris Nuttycombe <kris@precog.com>
+ * @author Tom Switzer <switzer@precog.com>
  */
 public class Client {
     private final Service service;
@@ -33,6 +34,7 @@ public class Client {
 
     /**
      * Factory method to create a Precog client from a Heroku addon token
+     *
      * @param precogToken Heroku precog addon token
      * @return Precog client
      */
@@ -56,7 +58,8 @@ public class Client {
     }
 
     /**
-     * Builds a new client to connect to precog services based on an PrecogServiceConfig
+     * Builds a new client to connect to precog services based on an PrecogServiceConfig.
+     *
      * @param ac account token
      */
     public Client(PrecogServiceConfig ac){
@@ -94,24 +97,45 @@ public class Client {
      * @param path    The path corresponding to the action to be performed
      * @return Path of the form /$service/v$version/$path
      */
-    public Path actionPath(String service, Path path) {
+    public static Path actionPath(String service, Path path) {
         return new Path(service + "/v" + API_VERSION).append(path);
     }
 
+
     /**
-     * Creates a new account ID, accessible by the specified email address and password, or returns the existing account ID.
+     * Creates a new account ID, accessible by the specified email address and
+     * password, or returns the existing account ID.
+     *
+     * @param service  the Precog service to use
+     * @param email    user's email
+     * @param password user's password
+     * @return Json string with the account Id
+     * @throws IOException
+     * @see Service
+     */
+    public static String createAccount(Service service, String email, String password) throws IOException {
+        Request r = new Request();
+        r.setBody("{ \"email\": \"" + email + "\", \"password\": \"" + password + "\" }");
+        Rest rest = new Rest(service);
+        // Returns Conflict if account exists.
+        return rest.request(Rest.Method.POST, actionPath(Services.ACCOUNTS, new Path("accounts/")).getPath(), r);
+    }
+
+    /**
+     * Creates a new account ID, accessible by the specified email address and
+     * password, or returns the existing account ID. This just calls
+     * {@link createAccount(Service,String,String)} with a default service of
+     * {@link Service#ProductionHttps}.
      *
      * @param email    user's email
      * @param password user's password
      * @return Json string with the account Id
      * @throws IOException
+     * @see Service#ProductionHttps
      */
-    public String createAccount(String email, String password) throws IOException {
-        Request r = new Request();
-        r.setBody("{ \"email\": \"" + email + "\", \"password\": \"" + password + "\" }");
-        return rest.request(Rest.Method.POST, actionPath(Services.ACCOUNTS, new Path("accounts/")).getPath(), r);
+    public static String createAccount(String email, String password) throws IOException {
+        return createAccount(Service.ProductionHttps, email, password);
     }
-
 
     /**
      * Retrieves the details about a particular account. This call is the primary mechanism by which you can retrieve your master API key.
@@ -174,12 +198,22 @@ public class Client {
 
 
     /**
-     * Ingest data in the specified path
-     * Ingest behavior is controlled by the ingest options
+     * Ingest data in the specified path.
+     *
+     * Ingest behavior is controlled by the ingest options.
      * <p/>
-     * If Async is true,  Asynchronously uploads data to the specified path and file name. The method will return almost immediately with an HTTP ACCEPTED response.
-     * If Async is false, Synchronously uploads data to the specified path and file name. The method will not return until the data has been committed to the transaction log. Queries may or may not reflect data committed to the transaction log.
-     * The optional owner account ID parameter can be used to disambiguate the account that owns the data, if the API key has multiple write grants to the path with different owners.
+     * If Async is true,  asynchronously uploads data to the specified path and
+     * file name. The method will return almost immediately with an HTTP
+     * ACCEPTED response.
+     * <p/>
+     * If Async is false, synchronously uploads data to the specified path and
+     * file name. The method will not return until the data has been committed
+     * to the transaction log. Queries may or may not reflect data committed
+     * to the transaction log.
+     * <p/>
+     * The optional owner account ID parameter can be used to disambiguate the
+     * account that owns the data, if the API key has multiple write grants to
+     * the path with different owners.
      *
      * @param path    The path at which the record should be placed in the virtual file system.
      * @param content content to be ingested

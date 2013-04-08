@@ -6,8 +6,9 @@ import java.util.logging.Level;
 import java.util.logging.Logger;
 
 /**
- * User: gabriel
- * Date: 12/10/12
+ * Convenience methods to build a {@link Service}.
+ *
+ * @author Gabriel Claramunt <gabriel@precog.com>
  */
 public class ServiceBuilder {
     public static Service service(String url){

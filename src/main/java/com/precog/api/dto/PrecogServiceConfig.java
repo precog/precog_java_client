@@ -4,11 +4,10 @@ import javax.xml.bind.DatatypeConverter;
 import java.io.UnsupportedEncodingException;
 
 /**
- * User: gabriel
- * Date: 3/17/13
+ * All the information needed to connect to precog.
+ * Intended to build from the token provided from Heroku addon accounts.
  *
- * All the information needed to connect to precog
- * Intended to build form the token provided from Heroku addon accounts
+ * @author Gabriel Claramunt <gabriel@precog.com>
  */
 public class PrecogServiceConfig {
 
@@ -28,13 +27,19 @@ public class PrecogServiceConfig {
         this.rootPath = rootPath;
     }
 
-    public static PrecogServiceConfig fromToken(String token){
+    /**
+     * Configure a new {@code PrecogServiceConfig} from a Precog Heroku token.
+     */
+    public static PrecogServiceConfig fromToken(String token) {
         byte[] data=DatatypeConverter.parseBase64Binary(token);
         String decoded= new String(data);
         String[] values=decoded.split(":");
         return new PrecogServiceConfig(values[0],values[1],values[2],values[3],values[4],values[5]);
     }
 
+    /**
+     * Converts this {@code PrecogServiceConfig} to a Heroku token.
+     */
     public String toToken() throws UnsupportedEncodingException {
         return DatatypeConverter.printBase64Binary((user+":"+password+":"+host+":"+accountId+":"+apiKey+":"+ rootPath).getBytes("UTF-8"));
     }
@@ -60,7 +65,6 @@ public class PrecogServiceConfig {
     }
 
     public String getApiKey() {
-
         return apiKey;
     }
 }

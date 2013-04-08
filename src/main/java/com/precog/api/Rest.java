@@ -11,8 +11,8 @@ import static javax.xml.bind.DatatypeConverter.printBase64Binary;
 
 /**
  * Class to handle the rest actions
- * User: gabriel
- * Date: 10/25/12
+ *
+ * @author Gabriel Claramunt <gabriel@precog.com>
  */
 class Rest {
 
@@ -21,8 +21,8 @@ class Rest {
     }
 
 
-    private Service service;
-    private String apiKey;
+    private final Service service;
+    private final String apiKey;
 
     /**
      * Constructor  (only visible to the package)
@@ -36,7 +36,17 @@ class Rest {
     }
 
     /**
-     * Creates a parameter string for use in url, in the form $key=$value UTF-8 encoded
+     * Constructor  (only visible to the package)
+     *
+     * @param service service to connect
+     */
+    Rest(Service service) {
+      this(service, null);
+    }
+
+    /**
+     * Creates a parameter string for use in url, in the form $key=$value UTF-8
+     * encoded.
      *
      * @param key
      * @param value
@@ -61,7 +71,7 @@ class Rest {
     //url = already composed service + v + action
 
     /**
-     * Sends a http request and parses the result
+     * Sends a http request and parses the result.
      *
      * @param method  request HTTP method ( GET, POST, DELETE,...)
      * @param path    full path for the request (i.e. /$service/v$version/$action )

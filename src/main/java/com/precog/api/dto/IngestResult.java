@@ -1,9 +1,9 @@
 package com.precog.api.dto;
 
 /**
- * Result of data ingestion
- * User: gabriel
- * Date: 10/26/12
+ * Result of data ingestion.
+ *
+ * @author Gabriel Claramunt <gabriel@precog.com>
  */
 public class IngestResult {
 
@@ -13,6 +13,10 @@ public class IngestResult {
     private int skipped;
     private String[] errors;
 
+    /**
+     * Returns the total number of records seen. This includes both records
+     * were successfully ingested and those that failed.
+     */
     public int getTotal() {
         return total;
     }
@@ -21,6 +25,9 @@ public class IngestResult {
         this.total = total;
     }
 
+    /** 
+     * Returns the number of records that were ingested successfully.
+     */
     public int getIngested() {
         return ingested;
     }
@@ -29,6 +36,7 @@ public class IngestResult {
         this.ingested = ingested;
     }
 
+    /** Returns the number of records that failed to be ingested. */
     public int getFailed() {
         return failed;
     }
@@ -37,6 +45,7 @@ public class IngestResult {
         this.failed = failed;
     }
 
+    /** Returns the number of records that were skipped. */
     public int getSkipped() {
         return skipped;
     }
@@ -45,6 +54,10 @@ public class IngestResult {
         this.skipped = skipped;
     }
 
+    /**
+     * Returns a list of errors returned by the server. Note that you can have
+     * errors, but also have some records be successfully ingested.
+     */
     public String[] getErrors() {
         return errors;
     }

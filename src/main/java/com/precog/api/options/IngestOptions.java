@@ -6,9 +6,9 @@ import java.util.HashMap;
 import java.util.Map;
 
 /**
- * Optional parameters for ingest
- * User: gabriel
- * Date: 10/26/12
+ * Optional parameters for ingest.
+ *
+ * @author Gabriel Claramunt <gabriel@precog.com>
  */
 public class IngestOptions {
 

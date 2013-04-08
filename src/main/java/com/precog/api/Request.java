@@ -5,8 +5,8 @@ import java.util.Map;
 
 /**
  * Handles the http request configuration
- * User: gabriel
- * Date: 10/26/12
+ *
+ * @author Gabriel Claramunt <gabriel@precog.com>
  */
 public class Request {
 
