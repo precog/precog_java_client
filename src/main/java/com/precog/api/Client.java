@@ -64,9 +64,9 @@ public class Client {
      * @param ac account token
      */
     public Client(PrecogServiceConfig ac){
-        this.service=ServiceBuilder.service(ac.getHost());
-        this.apiKey=ac.getApiKey();
-        this.rest= new Rest(service,apiKey);
+        this.service = ServiceBuilder.fromHost(ac.getHost());
+        this.apiKey = ac.getApiKey();
+        this.rest = new Rest(service, apiKey);
     }
 
     /**

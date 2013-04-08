@@ -11,12 +11,12 @@ import java.util.logging.Logger;
  * @author Gabriel Claramunt <gabriel@precog.com>
  */
 public class ServiceBuilder {
-    public static Service service(String url){
+    public static final Service fromHost(String url) {
         final String fUrl=url;
         return new Service() {
             @Override public URL serviceUrl() {
                 try {
-                    return new URL("https", fUrl, 443, "/v1/");
+                    return new URL("https", fUrl, 443, "/");
                 } catch (MalformedURLException ex) {
                     Logger.getLogger(Service.class.getName()).log(Level.SEVERE, "Invalid client URL", ex);
                 }

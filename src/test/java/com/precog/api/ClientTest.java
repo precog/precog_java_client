@@ -95,7 +95,7 @@ public class ClientTest {
         if (host == null) {
             svc = Service.DevPrecogHttps;
         } else {
-            svc = ServiceBuilder.service(host);
+            svc = ServiceBuilder.fromHost(host);
         }
         return svc;
     }
