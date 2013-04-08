@@ -7,6 +7,7 @@ package com.precog.api.dto;
  */
 public class IngestResult {
 
+	private String ingestId;
     private int total;
     private int ingested;
     private int failed;
@@ -65,4 +66,12 @@ public class IngestResult {
     public void setErrors(String[] errors) {
         this.errors = errors;
     }
+
+	public String getIngestId() {
+		return ingestId;
+	}
+
+	public void setIngestId(String ingestId) {
+		this.ingestId = ingestId;
+	}
 }

@@ -21,6 +21,7 @@ public class CSVIngestOptions extends IngestOptions {
 
     public CSVIngestOptions() {
         super(ContentType.CSV);
+        setBatch(true);
     }
 
     @Override

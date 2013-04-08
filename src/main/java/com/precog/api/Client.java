@@ -16,7 +16,8 @@ import java.io.IOException;
  */
 public class Client {
     private final Service service;
-    private final String apiKey;
+    
+	private final String apiKey;
 
     private final Rest rest;
 
@@ -69,7 +70,7 @@ public class Client {
     }
 
     /**
-     * Builds a new client to connect to precog services
+     * Builds a new client to connect to precog services.
      *
      * @param service service to connect
      * @param apiKey  api key to use
@@ -79,6 +80,16 @@ public class Client {
         this.apiKey = apiKey;
         this.rest = new Rest(service, apiKey);
     }
+    
+    /**
+     * Returns the current service (Precog end-point) being used.
+     * 
+     * @return the Precog service
+     */
+    public Service getService() {
+		return service;
+	}
+
 
     /**
      * Get the Api Key used by this client to store data.
@@ -138,7 +149,31 @@ public class Client {
     }
 
     /**
-     * Retrieves the details about a particular account. This call is the primary mechanism by which you can retrieve your master API key.
+     * Retrieves the details about a particular account. This call is the
+     * primary mechanism by which you can retrieve your master API key.
+     *
+     * @param service  the Precog service (end-point) to use
+     * @param email     user's email
+     * @param password  user's password
+     * @param accountId account's id number
+     * @return account info
+     * @throws IOException
+     * @see Service
+     */
+    public static String describeAccount(Service service, String email, String password, String accountId) throws IOException {
+        Request r = new Request();
+        Rest.addBaseAuth(r.getHeader(), email, password);
+        Rest rest = new Rest(service);
+        return rest.request(Rest.Method.GET, actionPath(Services.ACCOUNTS, new Path("accounts/" + accountId)).getPath(), r);
+    }
+
+
+    /**
+     * Retrieves the details about a particular account. This call is the
+     * primary mechanism by which you can retrieve your master API key.
+     * This is equivalent to calling
+     * {@link describeAccount(Service,String,String,String)} with a default
+     * service of {@link Service#ProductionHttps}.
      *
      * @param email     user's email
      * @param password  user's password
@@ -146,10 +181,8 @@ public class Client {
      * @return account info
      * @throws IOException
      */
-    public String describeAccount(String email, String password, String accountId) throws IOException {
-        Request r = new Request();
-        Rest.addBaseAuth(r.getHeader(), email, password);
-        return rest.request(Rest.Method.GET, actionPath(Services.ACCOUNTS, new Path("accounts/" + accountId)).getPath(), r);
+    public static String describeAccount(String email, String password, String accountId) throws IOException {
+        return describeAccount(Service.ProductionHttps, email, password, accountId);
     }
 
 
@@ -226,14 +259,14 @@ public class Client {
             throw new IllegalArgumentException("argument 'content' must contain a non empty value formatted as described by type");
         }
         Request request = new Request();
-        request.getHeader().putAll(options.asMap());
+        request.getParams().putAll(options.asMap());
         request.setBody(content);
         request.setContentType(options.getDataType());
         return rest.request(Rest.Method.POST, actionPath(Services.INGEST, buildStoragePath(options.isAsync(), path)).getPath(), request);
     }
 
     /**
-     * Deletes the specified path
+     * Deletes the specified path.
      *
      * @param path
      * @return
@@ -245,8 +278,12 @@ public class Client {
     }
 
     /**
-     * Executes a synchronous query relative to the specified base path. The HTTP connection will remain open for as long as the query is evaluating (potentially minutes).
-     * Not recommended for long-running queries, because if the connection is interrupted, there will be no way to retrieve the results of the query.
+     * Executes a synchronous query relative to the specified base path. The
+     * HTTP connection will remain open for as long as the query is evaluating
+     * (potentially minutes).
+     *
+     * Not recommended for long-running queries, because if the connection is
+     * interrupted, there will be no way to retrieve the results of the query.
      *
      * @param path relative storage path to query
      * @param q    quirrel query to excecute
@@ -260,6 +297,5 @@ public class Client {
         Request request = new Request();
         request.getParams().put("q", q);
         return rest.request(Rest.Method.GET, actionPath(Services.ANALYTICS, path).getPath(), request);
-
     }
 }

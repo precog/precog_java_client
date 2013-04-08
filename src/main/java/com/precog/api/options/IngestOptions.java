@@ -13,10 +13,12 @@ import java.util.Map;
 public class IngestOptions {
 
     public static String OWNER_ACCOUNT_ID = "ownerAccountId";
+    public static String MODE = "mode";
 
     private ContentType dataType;
     private String ownerAccountId;
     private boolean async;
+    private boolean batch;
 
     public IngestOptions(ContentType dataType) {
         this.dataType = dataType;
@@ -26,6 +28,9 @@ public class IngestOptions {
         Map<String, String> map = new HashMap<String, String>();
         if (ownerAccountId != null) {
             map.put(OWNER_ACCOUNT_ID, ownerAccountId);
+        }
+        if (batch) {
+        	map.put(MODE, "batch");
         }
         return map;
     }
@@ -49,4 +54,12 @@ public class IngestOptions {
     public void setAsync(boolean async) {
         this.async = async;
     }
+
+	public boolean isBatch() {
+		return batch;
+	}
+
+	public void setBatch(boolean batch) {
+		this.batch = batch;
+	}
 }

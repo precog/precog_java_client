@@ -1,11 +1,10 @@
 package com.precog.api.dto;
 
-import java.util.Map;
-
 /**
  * User Account details.
  *
  * @author Gabriel Claramunt <gabriel@precog.com>
+ * @author Tom Switzer <switzer@precog.com>
  */
 public class AccountInfo {
     private String accountId;
@@ -13,7 +12,7 @@ public class AccountInfo {
     private String accountCreationDate;
     private String apiKey;
     private String rootPath;
-    private String plan;
+    private AccountPlan plan;
 
     /**
      * Returns the account ID.
@@ -77,11 +76,11 @@ public class AccountInfo {
      * Returns the plan the account is subscribed too. For example, if you are
      * using a free beta account, then this would be "Free".
      */
-    public String getPlan() {
+    public AccountPlan getPlan() {
         return plan;
     }
 
-    public void setPlan(String plan) {
+    public void setPlan(AccountPlan plan) {
         this.plan = plan;
     }
 }
