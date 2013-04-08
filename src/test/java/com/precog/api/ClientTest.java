@@ -38,6 +38,10 @@ public class ClientTest {
     private static String generateEmail() {
     	return "java-test-" + UUID.randomUUID().toString() + "@precog.com";
     }
+    
+    private static Path generatePath() {
+    	return new Path(UUID.randomUUID().toString());
+    }
 
     public static String email = generateEmail();
     public static String password = "password";
@@ -227,7 +231,6 @@ public class ClientTest {
     }
 
     @Test
-    @Ignore
     public void testQuery() throws IOException {
         //just test the query was sent and executed successfully
 
