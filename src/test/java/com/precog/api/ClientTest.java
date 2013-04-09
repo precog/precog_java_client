@@ -6,6 +6,7 @@ import com.google.gson.reflect.TypeToken;
 import com.precog.api.Request.ContentType;
 import com.precog.api.dto.AccountInfo;
 import com.precog.api.dto.IngestResult;
+import com.precog.api.dto.QueryResult;
 import com.precog.api.options.CSVIngestOptions;
 import com.precog.api.options.IngestOptions;
 import com.precog.json.RawStringToJson;
@@ -16,13 +17,14 @@ import com.precog.json.gson.RawJson;
 
 import org.junit.BeforeClass;
 import org.junit.Test;
-import org.junit.Ignore;
 
 import javax.xml.bind.DatatypeConverter;
 
 import java.io.IOException;
 import java.io.UnsupportedEncodingException;
+import java.net.URL;
 
+import java.util.List;
 import java.util.UUID;
 
 import static org.junit.Assert.*;
@@ -47,7 +49,7 @@ public class ClientTest {
     public static String password = "password";
     public static String testAccountId;
     public static String testApiKey;
-    public static Client testClient;
+    public static PrecogClient testClient;
 
     private static class TestData {
         public final int testInt;
@@ -67,20 +69,20 @@ public class ClientTest {
     public static void beforeAll() throws Exception {
         testId = "" + Double.valueOf(java.lang.Math.random() * 10000).intValue();
 
-        Service svc = getService();
+        URL svc = getService();
 
-        String result = Client.createAccount(svc, email, password);
+        String result = PrecogClient.createAccount(svc, email, password);
         AccountInfo res = GsonFromJson.of(new TypeToken<AccountInfo>() {
         }).deserialize(result);
         testAccountId = res.getAccountId();
 
-        result = Client.describeAccount(svc, email, password, testAccountId);
+        result = PrecogClient.describeAccount(svc, email, password, testAccountId);
         res = GsonFromJson.of(new TypeToken<AccountInfo>() {
         }).deserialize(result);
         testApiKey = res.getApiKey();
 
         testPath = new Path(testAccountId).append(new Path("/test" + testId));
-        testClient = new Client(svc, testApiKey);
+        testClient = new PrecogClient(svc, testApiKey);
     }
 
     /**
@@ -89,15 +91,13 @@ public class ClientTest {
      * (to allow run the unit tests against a different server)
      * @return  Service
      */
-    private static Service getService() {
+    private static URL getService() {
         String host = System.getProperty("host");
-        Service svc;
         if (host == null) {
-            svc = Service.DevPrecogHttps;
+        	return PrecogClient.DEV_HTTPS;
         } else {
-            svc = ServiceBuilder.fromHost(host);
+        	return PrecogClient.fromHost(host);
         }
-        return svc;
     }
 
     @Test
@@ -107,15 +107,14 @@ public class ClientTest {
         RawJson testJson = new RawJson("{\"test\":[{\"v\": 1}, {\"v\": 2}]}");
         TestData testData = new TestData(42, "Hello\" World", testJson);
 
-        Record<TestData> testRecord = new Record<TestData>(testData);
-        testClient.store(testPath, testRecord, toJson);
+        testClient.store(testPath, testData, toJson);
     }
 
     @Test
     public void testStoreStrToJson() throws IOException {
         ToJson<String> toJson = new RawStringToJson();
-        Record<String> testRecord = new Record<String>("{\"test\":[{\"v\": 1}, {\"v\": 2}]}");
-        testClient.store(testPath, testRecord, toJson);
+        String data = "{\"test\":[{\"v\": 1}, {\"v\": 2}]}";
+        testClient.store(testPath, data, toJson);
     }
 
     @Test
@@ -179,8 +178,6 @@ public class ClientTest {
         RawJson testJson = new RawJson(testString);
         TestData testData = new TestData(42, "Hello\" World", testJson);
 
-        Record<TestData> testRecord = new Record<TestData>(testData);
-
         String expected = new StringBuilder("{")
                 .append("\"testInt\":").append(42).append(",")
                 .append("\"testStr\":\"Hello\\\" World\",")
@@ -188,7 +185,7 @@ public class ClientTest {
                 .append("}")
                 .toString();
 
-        assertEquals(expected, testRecord.toJson(toJson));
+        assertEquals(expected, toJson.serialize(testData));
     }
 
     @Test
@@ -196,15 +193,13 @@ public class ClientTest {
         ToJson<Object> toJson = new GsonToJson();
         TestData testData = new TestData(1, "���", new RawJson(""));
 
-        Record<TestData> testRecord = new Record<TestData>(testData);
-
         String expected = new StringBuilder("{")
                 .append("\"testInt\":").append(1).append(",")
                 .append("\"testStr\":\"���\"")
                 .append("}")
                 .toString();
 
-        String result = testRecord.toJson(toJson);
+        String result = toJson.serialize(testData);
 
         assertEquals(expected, result);
     }
@@ -212,7 +207,7 @@ public class ClientTest {
 
     @Test
     public void testCreateAccount() throws IOException {
-        String result = Client.createAccount(getService(), generateEmail(), password);
+        String result = PrecogClient.createAccount(getService(), generateEmail(), password);
         assertNotNull(result);
         AccountInfo res = GsonFromJson.of(new TypeToken<AccountInfo>() {
         }).deserialize(result);
@@ -223,7 +218,7 @@ public class ClientTest {
 
     @Test
     public void testDescribeAccount() throws IOException {
-        String result = Client.describeAccount(testClient.getService(), email, password, testAccountId);
+        String result = PrecogClient.describeAccount(testClient.getService(), email, password, testAccountId);
         assertNotNull(result);
         AccountInfo res = GsonFromJson.of(new TypeToken<AccountInfo>() {
         }).deserialize(result);
@@ -234,10 +229,9 @@ public class ClientTest {
     public void testQuery() throws IOException {
         //just test the query was sent and executed successfully
 
-        String result = testClient.query(new Path(testAccountId), "count(//" + testAccountId + ")");
+        QueryResult result = testClient.query(new Path(testAccountId), "count(//" + testAccountId + ")");
         assertNotNull(result);
-        String[] res = GsonFromJson.of(String[].class).deserialize(result);
-        assertEquals("0", res[0]);
+        assertEquals("0", result.getData().get(0));
     }
 
     @Test
@@ -250,7 +244,7 @@ public class ClientTest {
         String rootPath ="/00001234/";
         String values=user+":"+password+":"+host+":"+accountId+":"+apiKey+":"+ rootPath;
         String token= DatatypeConverter.printBase64Binary(values.getBytes("UTF-8"));
-        Client precogApi=Client.fromHeroku(token);
+        PrecogClient precogApi=PrecogClient.fromHeroku(token);
         assertNotNull(precogApi);
     }
 

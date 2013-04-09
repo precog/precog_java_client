@@ -1,11 +1,19 @@
 package com.precog.api;
 
 import com.precog.api.Request.ContentType;
+import com.precog.api.dto.AccountInfo;
 import com.precog.api.dto.PrecogServiceConfig;
+import com.precog.api.dto.QueryResult;
 import com.precog.api.options.IngestOptions;
 import com.precog.json.ToJson;
 
+import com.google.gson.Gson;
+
 import java.io.IOException;
+import java.net.MalformedURLException;
+import java.net.URL;
+import java.util.logging.Level;
+import java.util.logging.Logger;
 
 
 /**
@@ -14,10 +22,41 @@ import java.io.IOException;
  * @author Kris Nuttycombe <kris@precog.com>
  * @author Tom Switzer <switzer@precog.com>
  */
-public class Client {
-    private final Service service;
+public class PrecogClient {
+	private static final Logger logger = Logger.getLogger(PrecogClient.class.getName());
+	
+	static final URL fromHost(String host) {
+		try {
+			return new URL("https", host, 443, "/");
+		} catch (MalformedURLException ex) {
+            logger.log(Level.SEVERE, "Invalid client URL", ex);
+            return null;
+        }
+	}
+	
+    /**
+     * The deprecated production http service.
+     *
+     * @deprecated use {@link PRODUCTION_HTTPS}
+     */
+    @Deprecated
+    public static final URL PRODUCTION_HTTP = fromHost("api.precog.com");
+
+    /** The default Precog (production) HTTPS service. */
+    public static final URL PRODUCTION_HTTPS = fromHost("api.precog.com");
+
+    /** The default Precog Beta HTTPS service. */
+    public static final URL BETA_HTTPS = fromHost("beta.precog.com");
+
+    /** Precog development HTTPS service. */
+    public static final URL DEV_HTTPS = fromHost("devapi.precog.com");
+	
+	
+    private final URL service;
     
 	private final String apiKey;
+	
+	private final Gson gson;
 
     private final Rest rest;
 
@@ -39,8 +78,8 @@ public class Client {
      * @param precogToken Heroku precog addon token
      * @return Precog client
      */
-    public static Client fromHeroku(String precogToken) {
-        return new Client(PrecogServiceConfig.fromToken(precogToken));
+    public static PrecogClient fromHeroku(String precogToken) {
+        return new PrecogClient(PrecogServiceConfig.fromToken(precogToken));
     }
 
     /**
@@ -52,10 +91,8 @@ public class Client {
      * @param apiKey The string token that permits storage of records at or below the
      *               virtual filesystem path to be used
      */
-    public Client(String apiKey) {
-        this.service = Service.ProductionHttps;
-        this.apiKey = apiKey;
-        this.rest = new Rest(service, apiKey);
+    public PrecogClient(String apiKey) {
+    	this(PrecogClient.PRODUCTION_HTTPS, apiKey, null);
     }
 
     /**
@@ -63,10 +100,8 @@ public class Client {
      *
      * @param ac account token
      */
-    public Client(PrecogServiceConfig ac){
-        this.service = ServiceBuilder.fromHost(ac.getHost());
-        this.apiKey = ac.getApiKey();
-        this.rest = new Rest(service, apiKey);
+    public PrecogClient(PrecogServiceConfig ac){
+    	this(fromHost(ac.getHost()), ac.getApiKey(), null);
     }
 
     /**
@@ -75,9 +110,26 @@ public class Client {
      * @param service service to connect
      * @param apiKey  api key to use
      */
-    public Client(Service service, String apiKey) {
+    public PrecogClient(URL service, String apiKey) {
+    	this(service, apiKey, null);
+    }
+    
+    /**
+     * Builds a new client to connect to precog services.
+     * 
+     * If a {@code gson} is not null, then the provided {@code Gson} object
+     * will be used by {@link store(Path,Object)} to serialize the object to
+     * JSON. If {@code gson} is null, then a default {@code Gson} object is
+     * used instead.
+     * 
+     * @param service Precog end-point to use
+     * @param apiKey API key used to authenticate with Precog
+     * @param gson An optional Gson object to use for JSON serialization
+     */
+    public PrecogClient(URL service, String apiKey, Gson gson) {
         this.service = service;
         this.apiKey = apiKey;
+        this.gson = gson == null ? new Gson() : gson;
         this.rest = new Rest(service, apiKey);
     }
     
@@ -86,7 +138,7 @@ public class Client {
      * 
      * @return the Precog service
      */
-    public Service getService() {
+    public URL getService() {
 		return service;
 	}
 
@@ -112,7 +164,6 @@ public class Client {
         return new Path(service + "/v" + API_VERSION).append(path);
     }
 
-
     /**
      * Creates a new account ID, accessible by the specified email address and
      * password, or returns the existing account ID.
@@ -124,7 +175,7 @@ public class Client {
      * @throws IOException
      * @see Service
      */
-    public static String createAccount(Service service, String email, String password) throws IOException {
+    public static String createAccount(URL service, String email, String password) throws IOException {
         Request r = new Request();
         r.setBody("{ \"email\": \"" + email + "\", \"password\": \"" + password + "\" }");
         Rest rest = new Rest(service);
@@ -145,7 +196,7 @@ public class Client {
      * @see Service#ProductionHttps
      */
     public static String createAccount(String email, String password) throws IOException {
-        return createAccount(Service.ProductionHttps, email, password);
+        return createAccount(PrecogClient.PRODUCTION_HTTPS, email, password);
     }
 
     /**
@@ -160,7 +211,7 @@ public class Client {
      * @throws IOException
      * @see Service
      */
-    public static String describeAccount(Service service, String email, String password, String accountId) throws IOException {
+    public static String describeAccount(URL service, String email, String password, String accountId) throws IOException {
         Request r = new Request();
         Rest.addBaseAuth(r.getHeader(), email, password);
         Rest rest = new Rest(service);
@@ -182,9 +233,26 @@ public class Client {
      * @throws IOException
      */
     public static String describeAccount(String email, String password, String accountId) throws IOException {
-        return describeAccount(Service.ProductionHttps, email, password, accountId);
+        return describeAccount(PrecogClient.PRODUCTION_HTTPS, email, password, accountId);
     }
-
+    
+    /**
+     * Store the object {@code obj} as a record in Precog. It is serialized by
+     * Gson using reflection. If a {@code Gson} object was provided during
+     * construction, then it will be used, otherwise the default Gson
+     * serialization will be used.
+     * 
+     * @note Calling this method guarantees the object is stored in the Precog
+     *       transaction log.
+     * 
+     * @param path The path in the virtual file system to store the record
+     * @param obj The object to serialize to JSON and store in the VFS
+     * @throws IOException
+     */
+    public <T> void store(Path path, T obj) throws IOException {
+    	String json = gson.toJson(obj);
+    	store(path, json);
+    }
 
     /**
      * Store the specified record.
@@ -192,12 +260,12 @@ public class Client {
      * @param <T>        The type of the record object. This type must be serializable to JSON using a ToJson instance
      *                   for some supertype of the specified type.
      * @param path       The path at which the record should be placed in the virtual file system.
-     * @param record     The record being storeed.
+     * @param obj        The record being storeed.
      * @param serializer The function used to serialize the record to a JSON string.
      * @throws IOException
      */
-    public <T> void store(Path path, Record<T> record, ToJson<? super T> serializer) throws IOException {
-        store(path, record.toJson(serializer));
+    public <T> void store(Path path, T obj, ToJson<? super T> serializer) throws IOException {
+        store(path, serializer.serialize(obj));
     }
 
     /**
@@ -264,7 +332,7 @@ public class Client {
         request.setContentType(options.getDataType());
         return rest.request(Rest.Method.POST, actionPath(Services.INGEST, buildStoragePath(options.isAsync(), path)).getPath(), request);
     }
-
+    
     /**
      * Deletes the specified path.
      *
@@ -290,12 +358,15 @@ public class Client {
      * @return result as Json string
      * @throws IOException
      */
-    public String query(Path path, String q) throws IOException {
+    public QueryResult query(Path path, String q) throws IOException {
         if (!path.getPrefix().equals(Paths.FS)) {
             path = Paths.FS.append(path);
         }
         Request request = new Request();
         request.getParams().put("q", q);
-        return rest.request(Rest.Method.GET, actionPath(Services.ANALYTICS, path).getPath(), request);
+        request.getParams().put("format", "detailed");
+        String response = rest.request(Rest.Method.GET, actionPath(Services.ANALYTICS, path).getPath(), request);
+        QueryResult result = gson.fromJson(response, QueryResult.class);
+        return result;
     }
 }

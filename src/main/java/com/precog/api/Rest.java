@@ -21,7 +21,7 @@ class Rest {
     }
 
 
-    private final Service service;
+    private final URL service;
     private final String apiKey;
 
     /**
@@ -30,7 +30,7 @@ class Rest {
      * @param service service to connect
      * @param apiKey  api key to use
      */
-    Rest(Service service, String apiKey) {
+    Rest(URL service, String apiKey) {
         this.service = service;
         this.apiKey = apiKey;
     }
@@ -40,7 +40,7 @@ class Rest {
      *
      * @param service service to connect
      */
-    Rest(Service service) {
+    Rest(URL service) {
       this(service, null);
     }
 
@@ -91,7 +91,7 @@ class Rest {
             prefix = '&';
         }
 
-        URL serviceURL = new URL(service.serviceUrl(), path);
+        URL serviceURL = new URL(service, path);
         HttpURLConnection conn = (HttpURLConnection) serviceURL.openConnection();
 
         conn.setRequestMethod(method.toString());
