@@ -15,14 +15,23 @@ import com.precog.json.ToJson;
  * @author knuttycombe
  */
 public class GsonToJson implements ToJson<Object> {
-  public String serialize(Object value) {
-    Gson gson = new GsonBuilder().registerTypeAdapter(RawJson.class, new RawJsonSerializer()).create();
+	private Gson gson;
+	
+	public GsonToJson(Gson gson) {
+		this.gson = gson;
+	}
+	
+	public GsonToJson() {
+		this(new GsonBuilder().registerTypeAdapter(RawJson.class, new RawJsonSerializer()).create());
+	}
+	
+	public String serialize(Object value) {
 		return gson.toJson(value);
 	}
 
-  private static class RawJsonSerializer implements JsonSerializer<RawJson> {
-    public JsonElement serialize(RawJson src, Type typeOfSrc, JsonSerializationContext context) {
-      return new JsonParser().parse(src.getJson());
-    }
-  }
+	private static class RawJsonSerializer implements JsonSerializer<RawJson> {
+		public JsonElement serialize(RawJson src, Type typeOfSrc, JsonSerializationContext context) {
+			return new JsonParser().parse(src.getJson());
+		}
+	}
 }

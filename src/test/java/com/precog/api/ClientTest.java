@@ -3,12 +3,10 @@ package com.precog.api;
 import com.google.gson.annotations.SerializedName;
 import com.google.gson.reflect.TypeToken;
 
-import com.precog.api.Request.ContentType;
 import com.precog.api.dto.AccountInfo;
 import com.precog.api.dto.IngestResult;
 import com.precog.api.dto.QueryResult;
-import com.precog.api.options.CSVIngestOptions;
-import com.precog.api.options.IngestOptions;
+import com.precog.api.rest.Path;
 import com.precog.json.RawStringToJson;
 import com.precog.json.ToJson;
 import com.precog.json.gson.GsonFromJson;
@@ -24,7 +22,6 @@ import java.io.IOException;
 import java.io.UnsupportedEncodingException;
 import java.net.URL;
 
-import java.util.List;
 import java.util.UUID;
 
 import static org.junit.Assert.*;
@@ -33,9 +30,6 @@ import static org.junit.Assert.*;
  * Unit test for basic client.
  */
 public class ClientTest {
-
-    private static String testId = null;
-    private static Path testPath = null;
     
     private static String generateEmail() {
     	return "java-test-" + UUID.randomUUID().toString() + "@precog.com";
@@ -67,8 +61,6 @@ public class ClientTest {
 
     @BeforeClass
     public static void beforeAll() throws Exception {
-        testId = "" + Double.valueOf(java.lang.Math.random() * 10000).intValue();
-
         URL svc = getService();
 
         String result = PrecogClient.createAccount(svc, email, password);
@@ -81,8 +73,7 @@ public class ClientTest {
         }).deserialize(result);
         testApiKey = res.getApiKey();
 
-        testPath = new Path(testAccountId).append(new Path("/test" + testId));
-        testClient = new PrecogClient(svc, testApiKey);
+        testClient = new PrecogClient(svc, testApiKey, new Path(testAccountId));
     }
 
     /**
@@ -102,72 +93,35 @@ public class ClientTest {
 
     @Test
     public void testStore() throws IOException {
-        ToJson<Object> toJson = new GsonToJson();
-
         RawJson testJson = new RawJson("{\"test\":[{\"v\": 1}, {\"v\": 2}]}");
         TestData testData = new TestData(42, "Hello\" World", testJson);
-
-        testClient.store(testPath, testData, toJson);
+        testClient.append("/test/", testData);
     }
 
     @Test
     public void testStoreStrToJson() throws IOException {
         ToJson<String> toJson = new RawStringToJson();
         String data = "{\"test\":[{\"v\": 1}, {\"v\": 2}]}";
-        testClient.store(testPath, data, toJson);
+        testClient.append("/test/", data, toJson);
     }
 
     @Test
-    public void testStoreRawString() throws IOException {
+    public void testStoreRawJsonString() throws IOException {
         String rawJson = "{\"test\":[{\"v\": 1}, {\"v\": 2}]}";
-        testClient.store(testPath, rawJson);
+        testClient.appendAllFromString("/test/", rawJson, JsonFormat.JSON_STREAM);
     }
 
     @Test
     public void testStoreRawUTF8() throws IOException {
         String rawJson = "{\"test\":[{\"������������������������������\": 1}, {\"v\": 2}]}";
-        testClient.store(testPath, rawJson);
+        testClient.appendAllFromString("/test/", rawJson, JsonFormat.JSON_STREAM);
     }
 
     @Test
     public void testIngestCSV() throws IOException {
-        IngestOptions options = new CSVIngestOptions();
-        String response = testClient.ingest(testPath, "blah,\n\n", options);
-        IngestResult result = GsonFromJson.of(new TypeToken<IngestResult>() {
-        }).deserialize(response);
-        assertEquals(1, result.getIngested());
-    }
-
-    @Test
-    public void testIngestJSON() throws IOException {
-        IngestOptions options = new IngestOptions(ContentType.JSON);
-        String rawJson = "{\"test\":[{\"v\": 1}, {\"v\": 2}]}";
-        String response = testClient.ingest(testPath, rawJson, options);
-        IngestResult result = GsonFromJson.of(new TypeToken<IngestResult>() {
-        }).deserialize(response);
-        assertEquals(1, result.getIngested());
-    }
-
-    @Test
-    public void testIngestCsvWithOptions() throws IOException {
-        CSVIngestOptions options = new CSVIngestOptions();
-        options.setDelimiter(",");
-        options.setQuote("'");
-        options.setEscape("\\");
-        String response = testClient.ingest(testPath, "blah\n\n", options);
-        IngestResult result = GsonFromJson.of(new TypeToken<IngestResult>() {
-        }).deserialize(response);
-        assertEquals(1, result.getIngested());
-    }
-
-    @Test
-    public void testIngestAsync() throws IOException {
-        IngestOptions options = new CSVIngestOptions();
-        options.setAsync(true);
-        String response = testClient.ingest(testPath, "blah,\n\n", options);
-        IngestResult result = GsonFromJson.of(new TypeToken<IngestResult>() {
-        }).deserialize(response);
-        assertNotNull(result.getIngestId());
+    	String csv = "a,b,c\n1,2,3\n\n";
+        IngestResult result = testClient.appendAllFromString("/test/", csv, CsvFormat.CSV);
+        assertEquals(2, result.getIngested());
     }
 
     @Test
@@ -227,9 +181,7 @@ public class ClientTest {
 
     @Test
     public void testQuery() throws IOException {
-        //just test the query was sent and executed successfully
-
-        QueryResult result = testClient.query(new Path(testAccountId), "count(//" + testAccountId + ")");
+    	QueryResult result = testClient.query("", "count(//non-existant)");
         assertNotNull(result);
         assertEquals("0", result.getData().get(0));
     }

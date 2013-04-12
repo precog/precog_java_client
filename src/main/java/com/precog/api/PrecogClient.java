@@ -1,23 +1,36 @@
 package com.precog.api;
 
-import com.precog.api.Request.ContentType;
 import com.precog.api.dto.AccountInfo;
+import com.precog.api.dto.IngestResult;
 import com.precog.api.dto.PrecogServiceConfig;
 import com.precog.api.dto.QueryResult;
-import com.precog.api.options.IngestOptions;
+import com.precog.api.rest.Path;
+import com.precog.api.rest.Request;
+import com.precog.api.rest.RequestBuilder;
+import com.precog.api.rest.Rest;
+import com.precog.api.rest.Method;
 import com.precog.json.ToJson;
+import com.precog.json.gson.GsonToJson;
 
 import com.google.gson.Gson;
 
+import java.io.File;
 import java.io.IOException;
+import java.io.InputStream;
 import java.net.MalformedURLException;
 import java.net.URL;
+import java.util.Iterator;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
-
 /**
- * A simple client for storing arbitrary records in the Precog database.
+ * A simple REST client for Precog. This provides methods to upload files to
+ * your virtual file system (in Precog), append records/events to the VFS,
+ * delete data, and run Quirrel queries on your data. Additionally, you can
+ * also create new accounts and get the account details for existing accounts.
+ * 
+ * All methods are blocking, which means that the method returns when the
+ * server has replied with the answer.
  *
  * @author Kris Nuttycombe <kris@precog.com>
  * @author Tom Switzer <switzer@precog.com>
@@ -29,91 +42,48 @@ public class PrecogClient {
 		try {
 			return new URL("https", host, 443, "/");
 		} catch (MalformedURLException ex) {
-            logger.log(Level.SEVERE, "Invalid client URL", ex);
-            return null;
+			// Unfortunately, we need to turn this into a runtime exception.
+            throw new IllegalArgumentException("Invalid host: cannot construct URL from: https://" + host);
         }
-	}
-	
+	}	
+
+    /** The Precog (production) HTTPS service. */
+    public static final URL PRODUCTION_HTTPS = fromHost("nebula.precog.com");
+
     /**
-     * The deprecated production http service.
-     *
-     * @deprecated use {@link PRODUCTION_HTTPS}
+     * The Precog Beta HTTPS service. This is also the default Precog service
+     * used when one isn't specified.
      */
-    @Deprecated
-    public static final URL PRODUCTION_HTTP = fromHost("api.precog.com");
-
-    /** The default Precog (production) HTTPS service. */
-    public static final URL PRODUCTION_HTTPS = fromHost("api.precog.com");
-
-    /** The default Precog Beta HTTPS service. */
     public static final URL BETA_HTTPS = fromHost("beta.precog.com");
 
-    /** Precog development HTTPS service. */
+    /**
+     * Precog development HTTPS service. This is useful for testing t
+     */
     public static final URL DEV_HTTPS = fromHost("devapi.precog.com");
-	
-	
-    private final URL service;
-    
-	private final String apiKey;
-	
-	private final Gson gson;
 
-    private final Rest rest;
-
+    /** Precog API version being used. */
     public static final int API_VERSION = 1;
+    
+    private static Path FS = new Path("/fs/");
 
     private static class Paths {
-        public static Path FS = new Path("/fs");
-    }
-
-    private static class Services {
-        public static String ANALYTICS = "/analytics";
-        public static String ACCOUNTS = "/accounts";
-        public static String INGEST = "/ingest";
-    }
-
-    /**
-     * Factory method to create a Precog client from a Heroku addon token
-     *
-     * @param precogToken Heroku precog addon token
-     * @return Precog client
-     */
-    public static PrecogClient fromHeroku(String precogToken) {
-        return new PrecogClient(PrecogServiceConfig.fromToken(precogToken));
-    }
-
-    /**
-     * A convenience constructor that uses the default production API.
-     * Note: during the Precog beta period, you must use the two-argment constructor
-     * and provide the specific Service instance for the storage server URL provided
-     * with your integration instructions.
-     *
-     * @param apiKey The string token that permits storage of records at or below the
-     *               virtual filesystem path to be used
-     */
-    public PrecogClient(String apiKey) {
-    	this(PrecogClient.PRODUCTION_HTTPS, apiKey, null);
-    }
-
-    /**
-     * Builds a new client to connect to precog services based on an PrecogServiceConfig.
-     *
-     * @param ac account token
-     */
-    public PrecogClient(PrecogServiceConfig ac){
-    	this(fromHost(ac.getHost()), ac.getApiKey(), null);
-    }
-
-    /**
-     * Builds a new client to connect to precog services.
-     *
-     * @param service service to connect
-     * @param apiKey  api key to use
-     */
-    public PrecogClient(URL service, String apiKey) {
-    	this(service, apiKey, null);
+    	private static Path service(String serv) {
+    		return new Path(serv + "/v" + API_VERSION + "/");
+    	}
+    	
+        public static Path ANALYTICS = service("analytics");
+        public static Path ACCOUNTS = service("accounts");
+        public static Path INGEST = service("ingest");
     }
     
+    
+    private final Gson gson;
+    private final URL service;
+    private final Rest rest;
+    private final Path basePath;
+	private final String apiKey;
+	
+
     /**
      * Builds a new client to connect to precog services.
      * 
@@ -124,13 +94,81 @@ public class PrecogClient {
      * 
      * @param service Precog end-point to use
      * @param apiKey API key used to authenticate with Precog
+     * @param basePath The base path to use for all requests
      * @param gson An optional Gson object to use for JSON serialization
      */
-    public PrecogClient(URL service, String apiKey, Gson gson) {
+    public PrecogClient(URL service, String apiKey, Path basePath, Gson gson) {
         this.service = service;
         this.apiKey = apiKey;
         this.gson = gson == null ? new Gson() : gson;
-        this.rest = new Rest(service, apiKey);
+        this.rest = new Rest(service);
+        this.basePath = basePath;
+    }
+
+    /**
+     * Construct a new PrecogClient using the API key and root path of an
+     * account.
+     * 
+     * @param service the Precog end-point to use
+     * @param account the account to base this client off of
+     */
+    public PrecogClient(URL service, AccountInfo account) {
+    	this(service, account.getApiKey(), new Path(account.getRootPath()));
+    }
+    
+    /**
+     * Construct a new PrecogClient using the API key and root path of an
+     * account.
+     * 
+     * @param service the Precog end-point to use
+     */
+    public PrecogClient(AccountInfo account) {
+    	this(account.getApiKey(), new Path(account.getRootPath()));
+    }
+
+    /**
+     * A convenience constructor that uses the default beta API.
+     * Note: during the Precog beta period, you must use the two-argment constructor
+     * and provide the specific Service instance for the storage server URL provided
+     * with your integration instructions.
+     * 
+     * This uses the {@link BETA_HTTPS} (beta.precog.com) service by default.
+     *
+     * @param apiKey The string token that permits storage of records at or below the
+     *               virtual filesystem path to be used
+     */
+    public PrecogClient(String apiKey, Path basePath) {
+    	this(PrecogClient.BETA_HTTPS, apiKey, null);
+    }
+
+    /**
+     * Builds a new client to connect to precog services.
+     *
+     * @param service service to connect
+     * @param apiKey  api key to use
+     * @param basePath The base path to use for all requests
+     */
+    public PrecogClient(URL service, String apiKey, Path basePath) {
+    	this(service, apiKey, basePath, null);
+    }
+
+    /**
+     * Builds a new client to connect to precog services based on an PrecogServiceConfig.
+     *
+     * @param ac account token
+     */
+    public PrecogClient(PrecogServiceConfig ac){
+    	this(fromHost(ac.getHost()), ac.getApiKey(), new Path(ac.getRootPath()), null);
+    }
+
+    /**
+     * Factory method to create a Precog client from a Heroku addon token
+     *
+     * @param precogToken Heroku precog addon token
+     * @return Precog client
+     */
+    public static PrecogClient fromHeroku(String precogToken) {
+        return new PrecogClient(PrecogServiceConfig.fromToken(precogToken));
     }
     
     /**
@@ -151,22 +189,16 @@ public class PrecogClient {
     public String getApiKey() {
         return apiKey;
     }
-
-
-    /**
-     * Builds a path given a service and path, using the current api version
-     *
-     * @param service the name of the API service to access (eg. account, ingest,etc)
-     * @param path    The path corresponding to the action to be performed
-     * @return Path of the form /$service/v$version/$path
-     */
-    public static Path actionPath(String service, Path path) {
-        return new Path(service + "/v" + API_VERSION).append(path);
-    }
+    
+    
+    // ACCOUNTS
+    
 
     /**
      * Creates a new account ID, accessible by the specified email address and
-     * password, or returns the existing account ID.
+     * password, or returns the existing account ID. You <b>must</b> provide a
+     * service that uses HTTPS to use this service, otherwise an
+     * {@code IllegalArgumentException} will be thrown.
      *
      * @param service  the Precog service to use
      * @param email    user's email
@@ -176,18 +208,18 @@ public class PrecogClient {
      * @see Service
      */
     public static String createAccount(URL service, String email, String password) throws IOException {
-        Request r = new Request();
-        r.setBody("{ \"email\": \"" + email + "\", \"password\": \"" + password + "\" }");
-        Rest rest = new Rest(service);
-        // Returns Conflict if account exists.
-        return rest.request(Rest.Method.POST, actionPath(Services.ACCOUNTS, new Path("accounts/")).getPath(), r);
+        Request r = new RequestBuilder(Method.POST, Paths.ACCOUNTS.append("accounts/"))
+        	.setBody("{ \"email\": \"" + email + "\", \"password\": \"" + password + "\" }")
+        	.setHttpsRequired(true)
+        	.build();
+        return new Rest(service).execute(r);
     }
 
     /**
      * Creates a new account ID, accessible by the specified email address and
      * password, or returns the existing account ID. This just calls
      * {@link createAccount(Service,String,String)} with a default service of
-     * {@link Service#ProductionHttps}.
+     * {@link BETA_HTTPS}.
      *
      * @param email    user's email
      * @param password user's password
@@ -196,12 +228,14 @@ public class PrecogClient {
      * @see Service#ProductionHttps
      */
     public static String createAccount(String email, String password) throws IOException {
-        return createAccount(PrecogClient.PRODUCTION_HTTPS, email, password);
+        return createAccount(PrecogClient.BETA_HTTPS, email, password);
     }
 
     /**
      * Retrieves the details about a particular account. This call is the
-     * primary mechanism by which you can retrieve your master API key.
+     * primary mechanism by which you can retrieve your master API key. You
+     * <b>must</b> provide a service that uses HTTPS to use this service,
+     * otherwise an {@code IllegalArgumentException} will be thrown.
      *
      * @param service  the Precog service (end-point) to use
      * @param email     user's email
@@ -212,19 +246,19 @@ public class PrecogClient {
      * @see Service
      */
     public static String describeAccount(URL service, String email, String password, String accountId) throws IOException {
-        Request r = new Request();
-        Rest.addBaseAuth(r.getHeader(), email, password);
-        Rest rest = new Rest(service);
-        return rest.request(Rest.Method.GET, actionPath(Services.ACCOUNTS, new Path("accounts/" + accountId)).getPath(), r);
+        return Rest.execute(service, new RequestBuilder()
+			.setPath(Paths.ACCOUNTS.append("accounts/" + accountId))
+			.addBasicAuth(email, password)
+			.setHttpsRequired(true)
+			.build());
     }
-
 
     /**
      * Retrieves the details about a particular account. This call is the
      * primary mechanism by which you can retrieve your master API key.
      * This is equivalent to calling
      * {@link describeAccount(Service,String,String,String)} with a default
-     * service of {@link Service#ProductionHttps}.
+     * service of {@link BETA_HTTPS}.
      *
      * @param email     user's email
      * @param password  user's password
@@ -233,9 +267,106 @@ public class PrecogClient {
      * @throws IOException
      */
     public static String describeAccount(String email, String password, String accountId) throws IOException {
-        return describeAccount(PrecogClient.PRODUCTION_HTTPS, email, password, accountId);
+        return describeAccount(PrecogClient.BETA_HTTPS, email, password, accountId);
     }
     
+    
+    // INGEST
+    
+    
+    /**
+     * Appends all the events in {@code contents}, a string whose {@link Format}
+     * is described by {@code format}, to {@code path} in the virtual
+     * file-system.
+     * 
+     * @param path the path in Precog to ingest the data into
+     * @param contents the data to ingest
+     * @param format the format of the data
+     * @return the results of the ingest
+     * @throws IOException
+     */
+    public IngestResult appendAllFromString(String path, String contents, Format format)
+    		throws IOException {
+    	Request request = new RequestBuilder(ingestRequest(path, format))
+    		.setBody(contents).build();
+    	return gson.fromJson(rest.execute(request), IngestResult.class);
+    }
+    
+    /**
+     * Appends all the events in {@code contents}, a file whose {@link Format}
+     * is described by {@code format}, to {@code path} in the virtual
+     * file-system.
+     * 
+     * For instance, to ingest a CSV file, you could do something like:
+     * 
+     * <pre>
+     * {@code
+     * PrecogClient precog = new Precog(myApiKey, myAccountId);
+     * File csvFile = new File("/path/to/my.csv");
+     * precog.appendAllFromFile(file.getName(), file, CsvFormat.CSV);
+     * }
+     * </pre>
+     * 
+     * @param path the path in Precog to ingest the data into
+     * @param file the data file to ingest
+     * @param format the format of the data
+     * @return the results of the ingest
+     * @throws IOException
+     */
+    public IngestResult appendAllFromFile(String path, File file, Format format)
+    		throws IOException {
+    	Request request = new RequestBuilder(ingestRequest(path, format))
+    		.setBody(file).build();
+    	return gson.fromJson(rest.execute(request), IngestResult.class);
+    }
+
+    /**
+     * Appends all the events in {@code contents}, an {@code InputStream}
+     * whose {@link Format} is described by {@code format}, to {@code path} in
+     * the virtual file-system.
+     * 
+     * This will use chunked-encoding for the HTTP stream, so is suitable for
+     * large {@code InputStream}s.
+     * 
+     * @param path the path in Precog to ingest the data into
+     * @param file the data file to ingest
+     * @param format the format of the data
+     * @return the results of the ingest
+     * @throws IOException
+     */
+    public IngestResult appendAllFromInputStream(String path, InputStream in, Format format)
+    		throws IOException {
+    	Request request = new RequestBuilder(ingestRequest(path, format))
+    		.setBody(in).build();
+    	return gson.fromJson(rest.execute(request), IngestResult.class);
+    }
+    	
+    // Builds the bulk of an ingest request -- everything but the body.
+    private Request ingestRequest(String path0, Format format) {
+    	Path path = Paths.INGEST.append(buildStoragePath(new Path(path0)));
+    	final Request request0 = new RequestBuilder(Method.POST, path)
+    		.addParam("apiKey", apiKey)
+    		.addParam("mode", "batch")
+    		.addParam("receipt", "true")
+    		.setContentType(format.getContentType())
+    		// .addParam("ownerAccountId", accountId)
+    		.build();
+    	
+    	return format.accept(new FormatVisitor<Request>() {
+			public Request visitJsonFormat(JsonFormat format) {
+				return request0;
+			}
+
+			public Request visitCsvFormat(CsvFormat format) {
+				return new RequestBuilder(request0)
+					.addParam("delimiter", "" + format.getDelimiter())
+					.addParam("quote", "" + format.getQuote())
+					.addParam("escape", "" + format.getEscape())
+					.build();
+			}
+    	});
+    }
+
     /**
      * Store the object {@code obj} as a record in Precog. It is serialized by
      * Gson using reflection. If a {@code Gson} object was provided during
@@ -249,100 +380,89 @@ public class PrecogClient {
      * @param obj The object to serialize to JSON and store in the VFS
      * @throws IOException
      */
-    public <T> void store(Path path, T obj) throws IOException {
+    public IngestResult append(String path, Object obj) throws IOException {
     	String json = gson.toJson(obj);
-    	store(path, json);
+    	return appendAllFromString(path, json, JsonFormat.JSON_STREAM);
     }
-
+    
     /**
-     * Store the specified record.
-     *
-     * @param <T>        The type of the record object. This type must be serializable to JSON using a ToJson instance
-     *                   for some supertype of the specified type.
-     * @param path       The path at which the record should be placed in the virtual file system.
-     * @param obj        The record being storeed.
-     * @param serializer The function used to serialize the record to a JSON string.
+     * Append a collection of records in Precog.
+     * 
+     * @param path the sub-path to store the records in
+     * @param coll the collection of records to store
      * @throws IOException
      */
-    public <T> void store(Path path, T obj, ToJson<? super T> serializer) throws IOException {
-        store(path, serializer.serialize(obj));
+    public <T> IngestResult appendAll(String path, Iterable<T> coll) throws IOException {
+    	InputStream in = new JsonStream(new JsonIterator<T>(gson, coll.iterator()));
+    	return appendAllFromInputStream(path, in, JsonFormat.JSON_STREAM);
     }
-
+    
     /**
-     * Store a raw JSON string at the sep.
+     * Store the object {@code obj} as a record in Precog. It is serialized by
+     * using {@link ToJson#serialize(Object)} on {@code toJson}.
+     * 
+     * @note Calling this method guarantees the object is stored in the Precog
+     *       transaction log.
+     * 
+     * @param path The path in the virtual file system to store the record
+     * @param obj The object to serialize to JSON and store in the VFS
+     * @throws IOException
      */
-    public void store(Path path, String recordJson) throws IOException {
-        IngestOptions options = new IngestOptions(ContentType.JSON);
-        ingest(path, recordJson, options);
+    public <T> IngestResult append(String path, T obj, ToJson<T> toJson) throws IOException {
+    	String json = toJson.serialize(obj);
+    	return appendAllFromString(path, json, JsonFormat.JSON_STREAM);
     }
-
+    
     /**
-     * Builds the async/sync data storage path
-     *
-     * @param async boolean, true to do an async storage call
-     * @param path  The path at which the record should be placed in the virtual file system.
-     * @return full path
+     * Append a collection of records in Precog.
+     * 
+     * @param path the sub-path to store the records in
+     * @param coll the collection of records to store
+     * @throws IOException
      */
-    public Path buildStoragePath(boolean async, Path path) {
-        return new Path(async ? "async" : "sync").append(Paths.FS).append(path);
+    public <T> IngestResult appendAll(String path, Iterable<T> coll, ToJson<T> toJson) throws IOException {
+    	InputStream in = new JsonStream(new JsonIterator<T>(toJson, coll.iterator()));
+    	return appendAllFromInputStream(path, in, JsonFormat.JSON_STREAM);
+    }
+    
+    /**
+     * Uploads the records in {@code file} to {@code path}. This is equivalent
+     * to first <b>deleting the data</b> at the VFS path {@code path}, then
+     * calling {@link appendAllFromFile(String,File,Format)}.
+     * 
+     * @param path the path in Precog to upload the data to
+     * @param file the data file to upload
+     * @param format the format of the file's contents
+     * @return the results of the data ingest
+     * @throws IOException
+     */
+    public IngestResult uploadFile(String path, File file, Format format) throws IOException {
+    	delete(path);
+    	return appendAllFromFile(path, file, format);
     }
 
     /**
-     * Builds a sync data storage path
+     * Builds a data storage path from a given path.
      *
      * @param path The path at which the record should be placed in the virtual file system.
      * @return full path
      */
     public Path buildStoragePath(Path path) {
-        return buildStoragePath(false, path);
-    }
-
-
-    /**
-     * Ingest data in the specified path.
-     *
-     * Ingest behavior is controlled by the ingest options.
-     * <p/>
-     * If Async is true,  asynchronously uploads data to the specified path and
-     * file name. The method will return almost immediately with an HTTP
-     * ACCEPTED response.
-     * <p/>
-     * If Async is false, synchronously uploads data to the specified path and
-     * file name. The method will not return until the data has been committed
-     * to the transaction log. Queries may or may not reflect data committed
-     * to the transaction log.
-     * <p/>
-     * The optional owner account ID parameter can be used to disambiguate the
-     * account that owns the data, if the API key has multiple write grants to
-     * the path with different owners.
-     *
-     * @param path    The path at which the record should be placed in the virtual file system.
-     * @param content content to be ingested
-     * @param options Ingestion options
-     * @return ingest result
-     * @throws IOException
-     */
-    public String ingest(Path path, String content, IngestOptions options) throws IOException {
-        if (content == null || content.equals("")) {
-            throw new IllegalArgumentException("argument 'content' must contain a non empty value formatted as described by type");
-        }
-        Request request = new Request();
-        request.getParams().putAll(options.asMap());
-        request.setBody(content);
-        request.setContentType(options.getDataType());
-        return rest.request(Rest.Method.POST, actionPath(Services.INGEST, buildStoragePath(options.isAsync(), path)).getPath(), request);
+        return FS.append(basePath).append(path);
     }
     
     /**
-     * Deletes the specified path.
+     * Deletes the data stored at the specified path. This does NOT do a
+     * recursive delete. It'll only delete the data the path specified, all
+     * other data in sub-paths of {@code path} will remain in-tact.
      *
-     * @param path
-     * @return
+     * @param path the path to delete data from
      * @throws IOException
      */
-    public String delete(Path path) throws IOException {
-        Request request = new Request();
-        return rest.request(Rest.Method.DELETE, actionPath(Services.INGEST, buildStoragePath(path)).getPath(), request);
+    public void delete(String path) throws IOException {
+    	Path path0 = Paths.INGEST.append(buildStoragePath(new Path(path)));
+    	rest.execute(new RequestBuilder(Method.DELETE, path0)
+    		.addParam("apiKey", apiKey).build());
     }
 
     /**
@@ -358,15 +478,192 @@ public class PrecogClient {
      * @return result as Json string
      * @throws IOException
      */
-    public QueryResult query(Path path, String q) throws IOException {
-        if (!path.getPrefix().equals(Paths.FS)) {
-            path = Paths.FS.append(path);
-        }
-        Request request = new Request();
-        request.getParams().put("q", q);
-        request.getParams().put("format", "detailed");
-        String response = rest.request(Rest.Method.GET, actionPath(Services.ANALYTICS, path).getPath(), request);
-        QueryResult result = gson.fromJson(response, QueryResult.class);
+    public QueryResult query(String path0, String q) throws IOException {
+    	Path path = Paths.ANALYTICS.append(buildStoragePath(new Path(path0)));
+        Request request = new RequestBuilder(path)
+        	.addParam("apiKey", apiKey)
+        	.addParam("q", q)
+        	.addParam("format", "detailed")
+        	.build();
+        QueryResult result = gson.fromJson(rest.execute(request), QueryResult.class);
         return result;
+    }
+    
+    private static class AsyncQueryResult {
+    	public String jobId;
+    }
+    
+    /**
+     * Runs an asynchronous query against Precog. An async query is a query
+     * that simply returns a Job ID, rather than the query results. You can
+     * then periodically poll for the results of the job/query.
+     * 
+     * This does <b>NOT</b> run the query in a new thread. It will still block
+     * the current thread until the server responds.
+     * 
+     * An example of using this may look like,
+     * 
+     * <pre>
+     * {@code
+     * PrecogClient precog = ...;
+     * 
+     * // Submit a query and get back a job ID. 
+     * String jobId = precog.queryAsync("foo/", "min(//bar)");
+     * 
+     * // Poll Precog repeatedly until the query has finished and the
+     * // results are ready. 
+     * QueryResult result = null;
+     * while (result == null) {
+     *     result = precog.queryResults(jobId);
+     * }
+     * 
+     * // Print out the minimum of bar. 
+     * Double min = Double.valueOf(result.data.get(0));
+     * println("Min of //bar is: " + min);
+     * }
+     * </pre>
+     * 
+     * @param path the base path to use in the query
+     * @param q the query to execute
+     * @return a Job ID that can be used with {@link queryResults(String)}
+     * @throws IOException
+     */
+    public String queryAsync(String path, String q) throws IOException {
+    	Path prefixPath = basePath.append(new Path(path).stripTrailingSlash());
+    	Path path0 = Paths.ANALYTICS.append("queries");
+    	Request request = new RequestBuilder(Method.POST, path0)
+    		.addParam("apiKey", apiKey)
+    		.addParam("q", q)
+    		.addParam("prefixPath", prefixPath.toString())
+    		.build();
+    	String json = rest.execute(request);
+    	AsyncQueryResult result = gson.fromJson(json, AsyncQueryResult.class);
+    	return result.jobId;
+    }
+    
+    /**
+     * This polls Precog for the completion of an async query. If the query
+     * has completed, then a {@link QueryResult} object is returned. Otherwise,
+     * {@code null} is returned.
+     * 
+     * @param jobId the job ID of the query, as returned by {@code queryAsync(String,String)}
+     * @return the results if the query completed, {@code null} otherwise
+     * @throws IOException
+     */
+    public QueryResult queryResults(String jobId) throws IOException {
+    	Path path = Paths.ANALYTICS.append("queries/").append(jobId);
+        Request request = new RequestBuilder(path)
+        	.addParam("apiKey", apiKey)
+        	.build();
+        String json = rest.execute(request);
+        if (json != null && json != "") {
+        	QueryResult result = gson.fromJson(json, QueryResult.class);
+        	return result;
+        } else {
+        	return null;
+        }
+    }
+    
+    private static class JsonIterator<T> implements Iterator<String> {
+    	private ToJson<T> toJson;
+    	private Iterator<T> iter;
+
+		JsonIterator(ToJson<T> toJson, Iterator<T> iter) {
+			this.toJson = toJson;
+			this.iter = iter;
+		}
+		
+		@SuppressWarnings("unchecked")
+		JsonIterator(Gson gson, Iterator<T> iter) {
+			this.toJson = (ToJson<T>) new GsonToJson(gson);
+			this.iter = iter;
+		}
+		
+		public boolean hasNext() {
+			return iter.hasNext();
+		}
+
+		public String next() {
+			return toJson.serialize(iter.next());
+		}
+
+		public void remove() {
+			iter.remove();			
+		}
+    }
+        
+    /**
+     * Given an {@code Iterator<T>}, this will create a new-line separated
+     * input stream of the JSON serialization of each element in the iterator.
+     */
+    private static class JsonStream extends InputStream {
+    	private static enum Mode {
+    		SEPARATE, INSERT;
+    	}
+    	private static byte[] WS = new byte[] { 10 };
+    	
+    	private Iterator<String> iter;
+    	
+    	private Mode mode = Mode.INSERT;
+    	private int offset = 0;
+    	private byte[] chunk = new byte[0];
+    	
+    	JsonStream(Iterator<String> iter) {
+    		this.iter = iter;
+    	}
+    	
+    	private boolean isEmpty() throws IOException {
+    		while (offset >= chunk.length && queueNext()) {
+    			// Spin.
+    		}
+    		return offset >= chunk.length;
+    	}
+    	
+    	private boolean queueNext() throws IOException {
+    		if (iter.hasNext()) {
+    			if (mode == Mode.SEPARATE) {
+    				chunk = WS;
+    			} else {
+	    			String json = iter.next();
+	    			chunk = json.getBytes("UTF-8");
+    			}
+    			offset = 0;
+    			return true;
+    		} else {
+    			return false;
+    		}
+    	}
+
+		public int read() throws IOException {
+			if (isEmpty()) {
+				return -1;
+			} else {
+				return chunk[offset++];
+			}
+		}
+		
+		@Override
+		public int read(byte[] bytes) throws IOException {
+			return read(bytes, 0, bytes.length);
+		}
+		
+		@Override
+		public int read(byte[] bytes, int off, int len) throws IOException {
+			if (len == 0) {
+				return 0;
+			} else if (isEmpty()) {
+				return -1;
+			} else {
+				int pos = off;
+				while (len > 0 && !isEmpty()) {
+					int bs = Math.min(chunk.length - offset, len);
+					System.arraycopy(chunk, offset, bytes, pos, bs);
+					offset += bs;
+					pos += bs;
+					len -= bs;
+				}
+				return pos - off;
+			}
+		}
     }
 }

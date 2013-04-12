@@ -1,10 +1,11 @@
-package com.precog.api;
+package com.precog.api.rest;
 
 /**
  * A simple path representation that conforms to the path syntax
  * of the ReportGrid service API. 
  *
  * @author Kris Nuttycombe <kris@precog.com>
+ * @author Tom Switzer <switzer@precog.com>
  */
 public class Path {
     protected final String path;
@@ -16,7 +17,7 @@ public class Path {
      * @param path 
      */
     public Path(String path) {
-        this.path = ("/" + path).replaceAll("/+", "/");
+        this.path = path.replaceAll("/+", "/");
     }
 
     /**
@@ -27,14 +28,31 @@ public class Path {
     public String getPath() {
         return path;
     }
+    
+    /**
+     * Remove the trailing slash from the path, if it has one.
+     */
+    public Path stripTrailingSlash() {
+    	return new Path(path.replaceAll("/$", ""));
+    }
 
     /**
-     * Append a path to this one.
+     * Append {@code that} path to this one.
      *
      * @return the concatenation of the 2 paths
      */
     public Path append(Path that) {
         return new Path(path + "/" + that.path);
+    }
+    
+    /**
+     * Append {@code that} path to this one. This is equivalent to calling
+     * {@code path.append(new Path(that))}.
+     *
+     * @return the concatenation of the 2 paths
+     */
+    public Path append(String that) {
+    	return this.append(new Path(that));
     }
 
     /**
@@ -51,13 +69,31 @@ public class Path {
             return null;
         }
     }
+
+    public boolean isAbsolute() {
+    	return !isRelative();
+    }
+    
+    public boolean isRelative() {
+    	return path.length() == 0 || path.charAt(0) == '/';
+    }
   
-    /**
-     * Convert the path to a relative path.
-     * @return 
-     */
-    public String relativize() {
-        return path.replaceFirst("/", "");
+    /** Convert the path to a relative path. */
+    public Path relativize() {
+    	if (path.length() > 0 && path.charAt(0) == '/') {
+    		return new Path(path.substring(1));
+    	} else {
+    		return this;
+    	}
+    }
+    
+    /** Convert the path to an absolute path. */
+    public Path absolutize() {
+    	if (path.length() > 0 && path.charAt(0) == '/') {
+    		return this;
+    	} else {
+    		return new Path("/" + path);
+    	}
     }
   
     public String toString() {
