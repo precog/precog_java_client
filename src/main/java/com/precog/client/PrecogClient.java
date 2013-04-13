@@ -131,7 +131,7 @@ public class PrecogClient {
      * @param accountId the account to use as the data owner
      */
     public PrecogClient(URL service, String apiKey, String accountId) {
-    	this(service, apiKey, accountId, null, null);
+    	this(service, apiKey, accountId, accountId, null);
     }
 
     /**

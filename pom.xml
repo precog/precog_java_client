@@ -1,32 +1,58 @@
 <project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
   xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/maven-v4_0_0.xsd">
+  
   <modelVersion>4.0.0</modelVersion>
+  
+  <parent>
+    <groupId>org.sonatype.oss</groupId>
+    <artifactId>oss-parent</artifactId>
+    <version>7</version>
+  </parent>
+  
   <groupId>org.precog</groupId>
   <artifactId>precog-java-client</artifactId>
-  <packaging>jar</packaging>
   <version>1.0.0-SNAPSHOT</version>
-  <name>precog-java-client</name>
+  <packaging>jar</packaging>
+  
+  <name>Precog Java Client</name>
+  <description>A Java client for querying and storing data into Precog.</description>
   <url>http://precog.com/client-libraries/java</url>
-
-  <inceptionYear>2012</inceptionYear>
-
+  <licenses>
+  	<license>
+      <name>The MIT License</name>
+      <url>http://www.opensource.org/licenses/mit-license.php</url>
+      <distribution>repo</distribution>
+    </license>
+  </licenses>
+  
+  <scm>
+    <connection>scm:git:git@github.com:precog/precog_java_client.git</connection>
+    <developerConnection>scm:git:git@github.com:precog/precog_java_client.git</developerConnection>
+    <url>git@github.com:precog/precog_java_client.git</url>
+  </scm>
+  
   <organization>
     <name>ReportGrid, Inc.</name>
     <url>http://precog.com/</url>
-  </organization>  
-
-  <distributionManagement>
-    <repository>
-      <id>nexus.reportgrid.com</id>
-      <name>reportgrid public Nexus repo</name>
-      <url>http://nexus.reportgrid.com/content/repositories/public-releases</url>
-    </repository>
-    <snapshotRepository>
-      <id>nexus.reportgrid.com</id>
-      <name>reportgrid public SNAPSHOT Nexus repo</name>
-      <url>http://nexus.reportgrid.com/content/repositories/public-snapshots</url>
-    </snapshotRepository>
-  </distributionManagement>
+  </organization>
+  <inceptionYear>2012</inceptionYear>
+  <developers>
+  	<developer>
+  	  <id>kris</id>
+  	  <name>Kris Nuttycombe</name>
+  	  <email>kris@precog.com</email>
+  	</developer>
+  	<developer>
+  	  <id>gabriel</id>
+  	  <name>Gabriel Claramont</name>
+  	  <email>gabriel@precog.com</email>
+  	</developer>
+  	<developer>
+  	  <id>switzer</id>
+  	  <name>Tom Switzer</name>
+  	  <email>switzer@precog.com</email>
+  	</developer>
+  </developers>
 
   <dependencies>
     <dependency>
