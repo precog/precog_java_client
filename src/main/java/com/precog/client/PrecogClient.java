@@ -467,21 +467,23 @@ public class PrecogClient {
     // Builds the bulk of an ingest request -- everything but the body.
     private Request ingestRequest(String path0, Format format) {
     	Path path = Paths.INGEST.append(buildStoragePath(new Path(path0)));
-    	final Request request0 = new RequestBuilder(Method.POST, path)
+    	RequestBuilder rb = new RequestBuilder(Method.POST, path)
     		.addParam("apiKey", apiKey)
     		.addParam("mode", "batch")
     		.addParam("receipt", "true")
-    		.setContentType(format.getContentType())
-    		// .addParam("ownerAccountId", accountId)
-    		.build();
+    		.setContentType(format.getContentType());
+    	
+    	final Request request = accountId == null
+    			? rb.build()
+    			: rb.addParam("ownerAccountId", accountId).build();
     	
     	return format.accept(new FormatVisitor<Request>() {
 			public Request visitJsonFormat(JsonFormat format) {
-				return request0;
+				return request;
 			}
 
 			public Request visitCsvFormat(CsvFormat format) {
-				return new RequestBuilder(request0)
+				return new RequestBuilder(request)
 					.addParam("delimiter", "" + format.getDelimiter())
 					.addParam("quote", "" + format.getQuote())
 					.addParam("escape", "" + format.getEscape())
