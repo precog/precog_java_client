@@ -1,4 +1,4 @@
-package com.precog.api.rest;
+package com.precog.client.rest;
 
 /**
  * A simple path representation that conforms to the path syntax

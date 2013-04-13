@@ -1,4 +1,4 @@
-package com.precog.api.rest;
+package com.precog.client.rest;
 
 import static javax.xml.bind.DatatypeConverter.printBase64Binary;
 

@@ -1,4 +1,4 @@
-package com.precog.api.dto;
+package com.precog.client;
 
 import javax.xml.bind.DatatypeConverter;
 import java.io.UnsupportedEncodingException;

@@ -1,14 +1,10 @@
-package com.precog.api;
+package com.precog.client;
 
-import com.precog.api.dto.AccountInfo;
-import com.precog.api.dto.IngestResult;
-import com.precog.api.dto.PrecogServiceConfig;
-import com.precog.api.dto.QueryResult;
-import com.precog.api.rest.Path;
-import com.precog.api.rest.Request;
-import com.precog.api.rest.RequestBuilder;
-import com.precog.api.rest.Rest;
-import com.precog.api.rest.Method;
+import com.precog.client.rest.Method;
+import com.precog.client.rest.Path;
+import com.precog.client.rest.Request;
+import com.precog.client.rest.RequestBuilder;
+import com.precog.client.rest.Rest;
 import com.precog.json.ToJson;
 import com.precog.json.gson.GsonToJson;
 
@@ -47,12 +43,13 @@ public class PrecogClient {
         }
 	}	
 
-    /** The Precog (production) HTTPS service. */
-    public static final URL PRODUCTION_HTTPS = fromHost("nebula.precog.com");
+    /** The Precog (nebula) HTTPS service. */
+    public static final URL NEBULA_HTTPS = fromHost("nebula.precog.com");
 
     /**
      * The Precog Beta HTTPS service. This is also the default Precog service
-     * used when one isn't specified.
+     * used when one isn't specified. If you signed up for a beta account, this
+     * is the services you'll want to use.
      */
     public static final URL BETA_HTTPS = fromHost("beta.precog.com");
 
@@ -80,6 +77,7 @@ public class PrecogClient {
     private final Gson gson;
     private final URL service;
     private final Rest rest;
+    private final String accountId;
     private final Path basePath;
 	private final String apiKey;
 	
@@ -94,38 +92,76 @@ public class PrecogClient {
      * 
      * @param service Precog end-point to use
      * @param apiKey API key used to authenticate with Precog
+     * @param accountId the account to use as the data owner
      * @param basePath The base path to use for all requests
      * @param gson An optional Gson object to use for JSON serialization
      */
-    public PrecogClient(URL service, String apiKey, Path basePath, Gson gson) {
+    public PrecogClient(URL service, String apiKey, String accountId, String basePath, Gson gson) {
         this.service = service;
         this.apiKey = apiKey;
+        this.accountId = accountId;
+        this.basePath = basePath == null ? new Path("/") : new Path(basePath);
         this.gson = gson == null ? new Gson() : gson;
         this.rest = new Rest(service);
-        this.basePath = basePath;
     }
 
     /**
-     * Construct a new PrecogClient using the API key and root path of an
-     * account.
+     * Builds a new client to connect to precog services.
+     *
+     * @param service service to connect
+     * @param apiKey  api key to use
+     * @param accountId the account to use as the data owner
+     * @param basePath The base path to use for all requests
+     */
+    public PrecogClient(URL service, String apiKey, String accountId, String basePath) {
+    	this(service, apiKey, accountId, basePath, null);
+    }
+
+    /**
+     * Builds a new client to connect to precog services. This will use the
+     * {@code accountId} as the base path {@link getBasePath()} for all queries.
+     * If this is not desired, you must construct the {@link PrecogClient} with
+     * a base path explicitly.
+     * 
+     * This is equivalent to calling:
+     * {@code new PrecogClient(service, apiKey, accountId, accountId)}.
+     *
+     * @param service service to connect
+     * @param apiKey  api key to use
+     * @param accountId the account to use as the data owner
+     */
+    public PrecogClient(URL service, String apiKey, String accountId) {
+    	this(service, apiKey, accountId, null, null);
+    }
+
+    /**
+     * Builds a new client to connect to precog services. This attempts to
+     * determine the data owner (on ingest/append/upload) from the API key.
+     * This may fail and cause the related methods to throw an exception. If
+     * this is not desired, then use a constructor that let's you use one of
+     * the account IDs.
+     * 
+     * The base path in this case is assumed to be {@code "/"}.
+     *
+     * @param service service to connect
+     * @param apiKey  api key to use
+     */
+    public PrecogClient(URL service, String apiKey) {
+    	this(service, apiKey, null, null, null);
+    }
+
+    /**
+     * Construct a new PrecogClient using the API key of the given account, the
+     * account ID of the account as the data owner, and the account root path
+     * as the base path.
      * 
      * @param service the Precog end-point to use
      * @param account the account to base this client off of
      */
     public PrecogClient(URL service, AccountInfo account) {
-    	this(service, account.getApiKey(), new Path(account.getRootPath()));
+    	this(service, account.getApiKey(), account.getAccountId(), account.getRootPath());
     }
     
-    /**
-     * Construct a new PrecogClient using the API key and root path of an
-     * account.
-     * 
-     * @param service the Precog end-point to use
-     */
-    public PrecogClient(AccountInfo account) {
-    	this(account.getApiKey(), new Path(account.getRootPath()));
-    }
-
     /**
      * A convenience constructor that uses the default beta API.
      * Note: during the Precog beta period, you must use the two-argment constructor
@@ -142,34 +178,103 @@ public class PrecogClient {
     }
 
     /**
-     * Builds a new client to connect to precog services.
-     *
-     * @param service service to connect
-     * @param apiKey  api key to use
-     * @param basePath The base path to use for all requests
-     */
-    public PrecogClient(URL service, String apiKey, Path basePath) {
-    	this(service, apiKey, basePath, null);
-    }
-
-    /**
      * Builds a new client to connect to precog services based on an PrecogServiceConfig.
      *
      * @param ac account token
      */
-    public PrecogClient(PrecogServiceConfig ac){
-    	this(fromHost(ac.getHost()), ac.getApiKey(), new Path(ac.getRootPath()), null);
+    PrecogClient(PrecogServiceConfig ac){
+    	this(fromHost(ac.getHost()), ac.getApiKey(), ac.getAccountId(), ac.getRootPath());
     }
 
     /**
-     * Factory method to create a Precog client from a Heroku addon token
+     * Factory method to create a Precog client from a Heroku add-on token.
      *
      * @param precogToken Heroku precog addon token
-     * @return Precog client
+     * @return a {@link PrecogClient} configured from the Heroku token
      */
     public static PrecogClient fromHeroku(String precogToken) {
         return new PrecogClient(PrecogServiceConfig.fromToken(precogToken));
     }
+
+    /**
+     * Builds a new client to connect to precog services.
+     * 
+     * This constructor uses the Precog beta end-point (beta.precog.com). If
+     * you wish to use a different end point, use
+     * {@link PrecogClient(URL, String, String, String)}.
+     *
+     * @param apiKey  api key to use
+     * @param accountId the account to use as the data owner
+     * @param basePath The base path to use for all requests
+     * @see PrecogClient(URL, String, String, String)
+     * @see BETA_HTTPS
+     */
+    public PrecogClient(String apiKey, String accountId, String basePath) {
+    	this(BETA_HTTPS, apiKey, accountId, basePath, null);
+    }
+
+    /**
+     * Builds a new client to connect to precog services. This will use the
+     * {@code accountId} as the base path {@link getBasePath()} for all queries.
+     * If this is not desired, you must construct the {@link PrecogClient} with
+     * a base path explicitly.
+     * 
+     * This constructor uses the Precog beta end-point (beta.precog.com). If
+     * you wish to use a different end point, use
+     * {@link PrecogClient(URL, String, String)}.
+     *
+     * @param service service to connect
+     * @param apiKey  api key to use
+     * @param accountId the account to use as the data owner
+     * @see PrecogClient(URL, String, String)
+     * @see BETA_HTTPS
+     */
+    public PrecogClient(String apiKey, String accountId) {
+    	this(BETA_HTTPS, apiKey, accountId, null, null);
+    }
+
+    /**
+     * Builds a new client to connect to precog services. This attempts to
+     * determine the data owner (on ingest/append/upload) from the API key.
+     * This may fail and cause the related methods to throw an exception. If
+     * this is not desired, then use a constructor that let's you use one of
+     * the account IDs.
+     * 
+     * The base path in this case is assumed to be {@code "/"}.
+     * 
+     * This constructor uses the Precog beta end-point (beta.precog.com). If
+     * you wish to use a different end point, use
+     * {@link PrecogClient(URL, String)}.
+     *
+     * @param service service to connect
+     * @param apiKey  api key to use
+     * @see PrecogClient(URL, String)
+     * @see BETA_HTTPS
+     */
+    public PrecogClient(String apiKey) {
+    	this(BETA_HTTPS, apiKey, null, null, null);
+    }
+
+    /**
+     * Construct a new PrecogClient using the API key of the given account, the
+     * account ID of the account as the data owner, and the account root path
+     * as the base path.
+     * 
+     * This constructor uses the Precog beta end-point (beta.precog.com). If
+     * you wish to use a different end point, use
+     * {@link PrecogClient(URL, AccountInfo)}.
+     *
+     * @param account the account to base this client off of
+     * @see PrecogClient(URL, AccountInfo)
+     * @see BETA_HTTPS
+     */
+    public PrecogClient(AccountInfo account) {
+    	this(account.getApiKey(), account.getAccountId(), account.getRootPath());
+    }
+    
+    
+    // Getters.
+    
     
     /**
      * Returns the current service (Precog end-point) being used.
@@ -180,7 +285,6 @@ public class PrecogClient {
 		return service;
 	}
 
-
     /**
      * Get the Api Key used by this client to store data.
      *
@@ -188,6 +292,20 @@ public class PrecogClient {
      */
     public String getApiKey() {
         return apiKey;
+    }
+    
+    /**
+     * Returns the account ID used as the owner of ingested data.
+     */
+    public String getAccountId() {
+    	return accountId;
+    }
+    
+    /**
+     * Returns the base path that is prepended to all paths provided in methods.
+     */
+    public Path getBasePath() {
+    	return basePath;
     }
     
     
@@ -489,10 +607,6 @@ public class PrecogClient {
         return result;
     }
     
-    private static class AsyncQueryResult {
-    	public String jobId;
-    }
-    
     /**
      * Runs an asynchronous query against Precog. An async query is a query
      * that simply returns a Job ID, rather than the query results. You can
@@ -507,14 +621,14 @@ public class PrecogClient {
      * {@code
      * PrecogClient precog = ...;
      * 
-     * // Submit a query and get back a job ID. 
-     * String jobId = precog.queryAsync("foo/", "min(//bar)");
+     * // Submit a query and get back a Query object. 
+     * Query query = precog.queryAsync("foo/", "min(//bar)");
      * 
      * // Poll Precog repeatedly until the query has finished and the
      * // results are ready. 
      * QueryResult result = null;
      * while (result == null) {
-     *     result = precog.queryResults(jobId);
+     *     result = precog.queryResults(query);
      * }
      * 
      * // Print out the minimum of bar. 
@@ -528,7 +642,7 @@ public class PrecogClient {
      * @return a Job ID that can be used with {@link queryResults(String)}
      * @throws IOException
      */
-    public String queryAsync(String path, String q) throws IOException {
+    public Query queryAsync(String path, String q) throws IOException {
     	Path prefixPath = basePath.append(new Path(path).stripTrailingSlash());
     	Path path0 = Paths.ANALYTICS.append("queries");
     	Request request = new RequestBuilder(Method.POST, path0)
@@ -537,8 +651,7 @@ public class PrecogClient {
     		.addParam("prefixPath", prefixPath.toString())
     		.build();
     	String json = rest.execute(request);
-    	AsyncQueryResult result = gson.fromJson(json, AsyncQueryResult.class);
-    	return result.jobId;
+    	return gson.fromJson(json, Query.class);
     }
     
     /**
@@ -550,8 +663,8 @@ public class PrecogClient {
      * @return the results if the query completed, {@code null} otherwise
      * @throws IOException
      */
-    public QueryResult queryResults(String jobId) throws IOException {
-    	Path path = Paths.ANALYTICS.append("queries/").append(jobId);
+    public QueryResult queryResults(Query query) throws IOException {
+    	Path path = Paths.ANALYTICS.append("queries/").append(query.getJobId());
         Request request = new RequestBuilder(path)
         	.addParam("apiKey", apiKey)
         	.build();

@@ -1,4 +1,4 @@
-package com.precog.api.dto;
+package com.precog.client;
 
 /**
  * Result of data ingestion.

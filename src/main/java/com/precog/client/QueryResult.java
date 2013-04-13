@@ -1,4 +1,4 @@
-package com.precog.api.dto;
+package com.precog.client;
 
 import java.util.Collections;
 import java.util.List;

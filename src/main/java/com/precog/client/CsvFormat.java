@@ -1,6 +1,6 @@
-package com.precog.api;
+package com.precog.client;
 
-import com.precog.api.rest.ContentType;
+import com.precog.client.rest.ContentType;
 
 /**
  * A CSV format represents CSV files as values separated by a delimiter

@@ -1,4 +1,4 @@
-package com.precog.api;
+package com.precog.client;
 
 /**
  * This defines a type-safe way to work with the valid Precog formats. This

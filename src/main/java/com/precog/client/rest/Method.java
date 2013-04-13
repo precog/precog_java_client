@@ -1,4 +1,4 @@
-package com.precog.api.rest;
+package com.precog.client.rest;
 
 /**
  * The HTTP method used in a REST {@link Request}.

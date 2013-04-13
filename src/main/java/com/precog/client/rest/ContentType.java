@@ -1,4 +1,4 @@
-package com.precog.api.rest;
+package com.precog.client.rest;
 
 /**
  * The content type of a REST {@link Request}.

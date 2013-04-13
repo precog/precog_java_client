@@ -1,12 +1,15 @@
-package com.precog.api;
+package com.precog.client;
 
 import com.google.gson.annotations.SerializedName;
 import com.google.gson.reflect.TypeToken;
 
-import com.precog.api.dto.AccountInfo;
-import com.precog.api.dto.IngestResult;
-import com.precog.api.dto.QueryResult;
-import com.precog.api.rest.Path;
+import com.precog.client.AccountInfo;
+import com.precog.client.CsvFormat;
+import com.precog.client.IngestResult;
+import com.precog.client.JsonFormat;
+import com.precog.client.PrecogClient;
+import com.precog.client.QueryResult;
+import com.precog.client.rest.Path;
 import com.precog.json.RawStringToJson;
 import com.precog.json.ToJson;
 import com.precog.json.gson.GsonFromJson;
@@ -22,6 +25,7 @@ import java.io.IOException;
 import java.io.UnsupportedEncodingException;
 import java.net.URL;
 
+import java.util.ArrayList;
 import java.util.UUID;
 
 import static org.junit.Assert.*;
@@ -73,7 +77,7 @@ public class ClientTest {
         }).deserialize(result);
         testApiKey = res.getApiKey();
 
-        testClient = new PrecogClient(svc, testApiKey, new Path(testAccountId));
+        testClient = new PrecogClient(svc, testApiKey, testAccountId);
     }
 
     /**
@@ -140,6 +144,29 @@ public class ClientTest {
                 .toString();
 
         assertEquals(expected, toJson.serialize(testData));
+    }
+    
+    @Test
+    public void testAppendAllFromCollection() throws IOException {
+    	ArrayList<TestData> ts = new ArrayList<TestData>();
+    	ts.add(new TestData(1, "asdf", new RawJson("asdf")));
+    	ts.add(new TestData(2, "qwerty", new RawJson("[1,2,3]")));
+    	ts.add(new TestData(3, "zxcv", new RawJson("1111")));
+    	testClient.appendAll("/test/appendAll", ts);
+    	
+    	int count = 0;
+    	int i = 10;
+    	while (count == 0 && i > 0) {
+    		try {
+    			Thread.sleep(500);
+    		} catch (InterruptedException ex) {
+    			// Don't really care...
+    		}
+    		QueryResult result = testClient.query("/test/", "count(//appendAll)");
+    		count = Integer.valueOf(result.getData().get(0));
+    		i -= 1;
+    	}
+    	assertEquals(3, count);
     }
 
     @Test

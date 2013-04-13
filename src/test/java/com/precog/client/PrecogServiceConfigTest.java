@@ -1,6 +1,9 @@
-package com.precog.api.dto;
+package com.precog.client;
 
 import org.junit.Test;
+
+import com.precog.client.PrecogServiceConfig;
+
 import static org.junit.Assert.*;
 import javax.xml.bind.DatatypeConverter;
 

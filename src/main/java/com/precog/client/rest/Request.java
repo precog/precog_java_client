@@ -1,4 +1,4 @@
-package com.precog.api.rest;
+package com.precog.client.rest;
 
 import java.io.IOException;
 import java.io.InputStream;

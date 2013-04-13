@@ -1,6 +1,6 @@
-package com.precog.api;
+package com.precog.client;
 
-import com.precog.api.rest.ContentType;
+import com.precog.client.rest.ContentType;
 
 /**
  * This class represents JSON formatted data. There are 2 instances,
