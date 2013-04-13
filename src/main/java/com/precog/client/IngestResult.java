@@ -13,6 +13,10 @@ public class IngestResult {
     private int failed;
     private int skipped;
     private String[] errors;
+    
+    public boolean isSuccess() {
+    	return failed == 0;
+    }
 
     /**
      * Returns the total number of records seen. This includes both records

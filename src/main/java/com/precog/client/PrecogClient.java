@@ -27,7 +27,7 @@ import javax.xml.bind.DatatypeConverter;
  * your virtual file system (in Precog), append records/events to the VFS,
  * delete data, and run Quirrel queries on your data. Additionally, you can
  * also create new accounts and get the account details for existing accounts.
- * 
+ * <p>
  * All methods are blocking, which means that the method returns when the
  * server has replied with the answer.
  *
@@ -87,7 +87,7 @@ public class PrecogClient {
 
     /**
      * Builds a new client to connect to precog services.
-     * 
+     * <p>
      * If a {@code gson} is not null, then the provided {@code Gson} object
      * will be used by {@link store(Path,Object)} to serialize the object to
      * JSON. If {@code gson} is null, then a default {@code Gson} object is
@@ -125,7 +125,7 @@ public class PrecogClient {
      * {@code accountId} as the base path {@link getBasePath()} for all queries.
      * If this is not desired, you must construct the {@link PrecogClient} with
      * a base path explicitly.
-     * 
+     * <p>
      * This is equivalent to calling:
      * {@code new PrecogClient(service, apiKey, accountId, accountId)}.
      *
@@ -143,7 +143,7 @@ public class PrecogClient {
      * This may fail and cause the related methods to throw an exception. If
      * this is not desired, then use a constructor that let's you use one of
      * the account IDs.
-     * 
+     * <p>
      * The base path in this case is assumed to be {@code "/"}.
      *
      * @param service service to connect
@@ -170,7 +170,7 @@ public class PrecogClient {
      * Note: during the Precog beta period, you must use the two-argment constructor
      * and provide the specific Service instance for the storage server URL provided
      * with your integration instructions.
-     * 
+     * <p>
      * This uses the {@link BETA_HTTPS} (beta.precog.com) service by default.
      *
      * @param apiKey The string token that permits storage of records at or below the
@@ -193,17 +193,18 @@ public class PrecogClient {
         if (values.length != 6) {
         	throw new IllegalArgumentException("Invalid Heroku token.");
         }
-        String host = values[2];
+        
+        URL service = fromHost(values[2]);
         String accountId = values[3];
         String apiKey = values[4];
         String rootPath = values[5];
         
-        return new PrecogClient(fromHost(host), apiKey, accountId, rootPath);
+        return new PrecogClient(service, apiKey, accountId, rootPath);
     }
 
     /**
      * Builds a new client to connect to precog services.
-     * 
+     * <p>
      * This constructor uses the Precog beta end-point (beta.precog.com). If
      * you wish to use a different end point, use
      * {@link PrecogClient(URL, String, String, String)}.
@@ -223,7 +224,7 @@ public class PrecogClient {
      * {@code accountId} as the base path {@link getBasePath()} for all queries.
      * If this is not desired, you must construct the {@link PrecogClient} with
      * a base path explicitly.
-     * 
+     * <p>
      * This constructor uses the Precog beta end-point (beta.precog.com). If
      * you wish to use a different end point, use
      * {@link PrecogClient(URL, String, String)}.
@@ -244,9 +245,9 @@ public class PrecogClient {
      * This may fail and cause the related methods to throw an exception. If
      * this is not desired, then use a constructor that let's you use one of
      * the account IDs.
-     * 
+     * <p>
      * The base path in this case is assumed to be {@code "/"}.
-     * 
+     * <p>
      * This constructor uses the Precog beta end-point (beta.precog.com). If
      * you wish to use a different end point, use
      * {@link PrecogClient(URL, String)}.
@@ -264,7 +265,7 @@ public class PrecogClient {
      * Construct a new PrecogClient using the API key of the given account, the
      * account ID of the account as the data owner, and the account root path
      * as the base path.
-     * 
+     * <p>
      * This constructor uses the Precog beta end-point (beta.precog.com). If
      * you wish to use a different end point, use
      * {@link PrecogClient(URL, AccountInfo)}.
@@ -430,9 +431,9 @@ public class PrecogClient {
      * Appends all the events in {@code contents}, a file whose {@link Format}
      * is described by {@code format}, to {@code path} in the virtual
      * file-system.
-     * 
+     * <p>
      * For instance, to ingest a CSV file, you could do something like:
-     * 
+     * <p>
      * <pre>
      * {@code
      * PrecogClient precog = new Precog(myApiKey, myAccountId);
@@ -459,7 +460,7 @@ public class PrecogClient {
      * Appends all the events in {@code contents}, an {@code InputStream}
      * whose {@link Format} is described by {@code format}, to {@code path} in
      * the virtual file-system.
-     * 
+     * <p>
      * This will use chunked-encoding for the HTTP stream, so is suitable for
      * large {@code InputStream}s.
      * 
@@ -617,7 +618,7 @@ public class PrecogClient {
      * Executes a synchronous query relative to the specified base path. The
      * HTTP connection will remain open for as long as the query is evaluating
      * (potentially minutes).
-     *
+     * <p>
      * Not recommended for long-running queries, because if the connection is
      * interrupted, there will be no way to retrieve the results of the query.
      *
@@ -642,7 +643,7 @@ public class PrecogClient {
      * Executes a synchronous query relative to the specified base path. The
      * HTTP connection will remain open for as long as the query is evaluating
      * (potentially minutes).
-     *
+     * <p>
      * Not recommended for long-running queries, because if the connection is
      * interrupted, there will be no way to retrieve the results of the query.
      *
@@ -659,13 +660,13 @@ public class PrecogClient {
      * Runs an asynchronous query against Precog. An async query is a query
      * that simply returns a Job ID, rather than the query results. You can
      * then periodically poll for the results of the job/query.
-     * 
+     * <p>
      * This does <b>NOT</b> run the query in a new thread. It will still block
      * the current thread until the server responds.
-     * 
+     * <p>
      * An example of using {@link queryAsync(String)} to poll for results
      * could look like:
-     * 
+     * <p>
      * <pre>
      * {@code
      * PrecogClient precog = ...;
@@ -678,7 +679,7 @@ public class PrecogClient {
      * println("Minimum is: " + min);
      * }
      * </pre>
-     * 
+     * <p>
      * This is ideal for long running queries.
      * 
      * @param path the base path to use in the query
