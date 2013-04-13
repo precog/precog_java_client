@@ -1,5 +1,6 @@
 package com.precog.client;
 
+import com.precog.client.rest.HttpException;
 import com.precog.client.rest.Method;
 import com.precog.client.rest.Path;
 import com.precog.client.rest.Request;
@@ -18,6 +19,8 @@ import java.net.URL;
 import java.util.Iterator;
 import java.util.logging.Level;
 import java.util.logging.Logger;
+
+import javax.xml.bind.DatatypeConverter;
 
 /**
  * A simple REST client for Precog. This provides methods to upload files to
@@ -178,22 +181,24 @@ public class PrecogClient {
     }
 
     /**
-     * Builds a new client to connect to precog services based on an PrecogServiceConfig.
-     *
-     * @param ac account token
-     */
-    PrecogClient(PrecogServiceConfig ac){
-    	this(fromHost(ac.getHost()), ac.getApiKey(), ac.getAccountId(), ac.getRootPath());
-    }
-
-    /**
      * Factory method to create a Precog client from a Heroku add-on token.
      *
      * @param precogToken Heroku precog addon token
      * @return a {@link PrecogClient} configured from the Heroku token
      */
     public static PrecogClient fromHeroku(String precogToken) {
-        return new PrecogClient(PrecogServiceConfig.fromToken(precogToken));
+    	byte[] data=DatatypeConverter.parseBase64Binary(precogToken);
+        String decoded= new String(data);
+        String[] values=decoded.split(":");
+        if (values.length != 6) {
+        	throw new IllegalArgumentException("Invalid Heroku token.");
+        }
+        String host = values[2];
+        String accountId = values[3];
+        String apiKey = values[4];
+        String rootPath = values[5];
+        
+        return new PrecogClient(fromHost(host), apiKey, accountId, rootPath);
     }
 
     /**
@@ -322,9 +327,11 @@ public class PrecogClient {
      * @param email    user's email
      * @param password user's password
      * @return Json string with the account Id
-     * @throws IOException
+     * @throws IOException if there is a problem with the network
+     * @throws HttpException if the server sends an unexpected response
      */
-    public static AccountInfo createAccount(URL service, String email, String password) throws IOException {
+    public static AccountInfo createAccount(URL service, String email, String password)
+    		throws IOException, HttpException {
         Request r = new RequestBuilder(Method.POST, Paths.ACCOUNTS.append("accounts/"))
         	.setBody("{ \"email\": \"" + email + "\", \"password\": \"" + password + "\" }")
         	.setHttpsRequired(true)
@@ -343,9 +350,11 @@ public class PrecogClient {
      * @param email    user's email
      * @param password user's password
      * @return Json string with the account Id
-     * @throws IOException
+     * @throws IOException if there is a problem with the network
+     * @throws HttpException if the server sends an unexpected response
      */
-    public static AccountInfo createAccount(String email, String password) throws IOException {
+    public static AccountInfo createAccount(String email, String password)
+    		throws IOException, HttpException {
         return createAccount(PrecogClient.BETA_HTTPS, email, password);
     }
 
@@ -360,9 +369,11 @@ public class PrecogClient {
      * @param password  user's password
      * @param accountId account's id number
      * @return account info
-     * @throws IOException
+     * @throws IOException if there is a problem with the network
+     * @throws HttpException if the server sends an unexpected response
      */
-    public static AccountInfo describeAccount(URL service, String email, String password, String accountId) throws IOException {
+    public static AccountInfo describeAccount(URL service, String email, String password, String accountId)
+    		throws IOException, HttpException {
     	Request request = new RequestBuilder()
 			.setPath(Paths.ACCOUNTS.append("accounts/" + accountId))
 			.addBasicAuth(email, password)
@@ -384,9 +395,11 @@ public class PrecogClient {
      * @param password  user's password
      * @param accountId account's id number
      * @return account info
-     * @throws IOException
+     * @throws IOException if there is a problem with the network
+     * @throws HttpException if the server sends an unexpected response
      */
-    public static AccountInfo describeAccount(String email, String password, String accountId) throws IOException {
+    public static AccountInfo describeAccount(String email, String password, String accountId)
+    		throws IOException, HttpException {
         return describeAccount(PrecogClient.BETA_HTTPS, email, password, accountId);
     }
     
@@ -403,10 +416,11 @@ public class PrecogClient {
      * @param contents the data to ingest
      * @param format the format of the data
      * @return the results of the ingest
-     * @throws IOException
+     * @throws IOException if there is a problem with the network
+     * @throws HttpException if the server sends an unexpected response
      */
     public IngestResult appendAllFromString(String path, String contents, Format format)
-    		throws IOException {
+    		throws IOException, HttpException {
     	Request request = new RequestBuilder(ingestRequest(path, format))
     		.setBody(contents).build();
     	return gson.fromJson(rest.execute(request), IngestResult.class);
@@ -431,10 +445,11 @@ public class PrecogClient {
      * @param file the data file to ingest
      * @param format the format of the data
      * @return the results of the ingest
-     * @throws IOException
+     * @throws IOException if there is a problem with the network
+     * @throws HttpException if the server sends an unexpected response
      */
     public IngestResult appendAllFromFile(String path, File file, Format format)
-    		throws IOException {
+    		throws IOException, HttpException {
     	Request request = new RequestBuilder(ingestRequest(path, format))
     		.setBody(file).build();
     	return gson.fromJson(rest.execute(request), IngestResult.class);
@@ -452,10 +467,11 @@ public class PrecogClient {
      * @param file the data file to ingest
      * @param format the format of the data
      * @return the results of the ingest
-     * @throws IOException
+     * @throws IOException if there is a problem with the network
+     * @throws HttpException if the server sends an unexpected response
      */
     public IngestResult appendAllFromInputStream(String path, InputStream in, Format format)
-    		throws IOException {
+    		throws IOException, HttpException {
     	Request request = new RequestBuilder(ingestRequest(path, format))
     		.setBody(in).build();
     	return gson.fromJson(rest.execute(request), IngestResult.class);
@@ -502,7 +518,8 @@ public class PrecogClient {
      * @param obj The object to serialize to JSON and store in the VFS
      * @throws IOException
      */
-    public IngestResult append(String path, Object obj) throws IOException {
+    public IngestResult append(String path, Object obj)
+    		throws IOException, HttpException {
     	String json = gson.toJson(obj);
     	return appendAllFromString(path, json, JsonFormat.JSON_STREAM);
     }
@@ -512,9 +529,11 @@ public class PrecogClient {
      * 
      * @param path the sub-path to store the records in
      * @param coll the collection of records to store
-     * @throws IOException
+     * @throws IOException if there is a problem with the network
+     * @throws HttpException if the server sends an unexpected response
      */
-    public <T> IngestResult appendAll(String path, Iterable<T> coll) throws IOException {
+    public <T> IngestResult appendAll(String path, Iterable<T> coll)
+    		throws IOException, HttpException {
     	InputStream in = new JsonStream(new JsonIterator<T>(gson, coll.iterator()));
     	return appendAllFromInputStream(path, in, JsonFormat.JSON_STREAM);
     }
@@ -528,9 +547,11 @@ public class PrecogClient {
      * 
      * @param path The path in the virtual file system to store the record
      * @param obj The object to serialize to JSON and store in the VFS
-     * @throws IOException
+     * @throws IOException if there is a problem with the network
+     * @throws HttpException if the server sends an unexpected response
      */
-    public <T> IngestResult append(String path, T obj, ToJson<T> toJson) throws IOException {
+    public <T> IngestResult append(String path, T obj, ToJson<T> toJson)
+    		throws IOException, HttpException {
     	String json = toJson.serialize(obj);
     	return appendAllFromString(path, json, JsonFormat.JSON_STREAM);
     }
@@ -540,9 +561,11 @@ public class PrecogClient {
      * 
      * @param path the sub-path to store the records in
      * @param coll the collection of records to store
-     * @throws IOException
+     * @throws IOException if there is a problem with the network
+     * @throws HttpException if the server sends an unexpected response
      */
-    public <T> IngestResult appendAll(String path, Iterable<T> coll, ToJson<T> toJson) throws IOException {
+    public <T> IngestResult appendAll(String path, Iterable<T> coll, ToJson<T> toJson)
+    		throws IOException, HttpException {
     	InputStream in = new JsonStream(new JsonIterator<T>(toJson, coll.iterator()));
     	return appendAllFromInputStream(path, in, JsonFormat.JSON_STREAM);
     }
@@ -556,9 +579,11 @@ public class PrecogClient {
      * @param file the data file to upload
      * @param format the format of the file's contents
      * @return the results of the data ingest
-     * @throws IOException
+     * @throws IOException if there is a problem with the network
+     * @throws HttpException if the server sends an unexpected response
      */
-    public IngestResult uploadFile(String path, File file, Format format) throws IOException {
+    public IngestResult uploadFile(String path, File file, Format format)
+    		throws IOException, HttpException {
     	delete(path);
     	return appendAllFromFile(path, file, format);
     }
@@ -579,9 +604,10 @@ public class PrecogClient {
      * other data in sub-paths of {@code path} will remain in-tact.
      *
      * @param path the path to delete data from
-     * @throws IOException
+     * @throws IOException if there is a problem with the network
+     * @throws HttpException if the server sends an unexpected response
      */
-    public void delete(String path) throws IOException {
+    public void delete(String path) throws IOException, HttpException {
     	Path path0 = Paths.INGEST.append(buildStoragePath(new Path(path)));
     	rest.execute(new RequestBuilder(Method.DELETE, path0)
     		.addParam("apiKey", apiKey).build());
@@ -598,9 +624,10 @@ public class PrecogClient {
      * @param path relative storage path to query
      * @param q    quirrel query to excecute
      * @return result as Json string
-     * @throws IOException
+     * @throws IOException if there is a problem with the network
+     * @throws HttpException if the server sends an unexpected response
      */
-    public QueryResult query(String path, String q) throws IOException {
+    public QueryResult query(String path, String q) throws IOException, HttpException {
     	Path path0 = Paths.ANALYTICS.append(buildStoragePath(new Path(path)));
         Request request = new RequestBuilder(path0)
         	.addParam("apiKey", apiKey)
@@ -621,9 +648,10 @@ public class PrecogClient {
      *
      * @param q    quirrel query to excecute
      * @return result as Json string
-     * @throws IOException
+     * @throws IOException if there is a problem with the network
+     * @throws HttpException if the server sends an unexpected response
      */
-    public QueryResult query(String q) throws IOException {
+    public QueryResult query(String q) throws IOException, HttpException {
     	return query("", q);
     }
     
@@ -656,9 +684,10 @@ public class PrecogClient {
      * @param path the base path to use in the query
      * @param q the query to execute
      * @return a Job ID that can be used with {@link queryResults(String)}
-     * @throws IOException
+     * @throws IOException if there is a problem with the network
+     * @throws HttpException if the server sends an unexpected response
      */
-    public Query queryAsync(String path, String q) throws IOException {
+    public Query queryAsync(String path, String q) throws IOException, HttpException {
     	Path prefixPath = basePath.append(new Path(path).stripTrailingSlash());
     	Path path0 = Paths.ANALYTICS.append("queries");
     	Request request = new RequestBuilder(Method.POST, path0)
@@ -677,7 +706,7 @@ public class PrecogClient {
      * 
      * @see PrecogClient#queryAsync(String, String)
      */
-    public Query queryAsync(String q) throws IOException {
+    public Query queryAsync(String q) throws IOException, HttpException {
     	return queryAsync("", q);
     }
     
@@ -688,9 +717,10 @@ public class PrecogClient {
      * 
      * @param jobId the job ID of the query, as returned by {@code queryAsync(String,String)}
      * @return the results if the query completed, {@code null} otherwise
-     * @throws IOException
+     * @throws IOException if there is a problem with the network
+     * @throws HttpException if the server sends an unexpected response
      */
-    public QueryResult queryResults(Query query) throws IOException {
+    public QueryResult queryResults(Query query) throws IOException, HttpException {
     	Path path = Paths.ANALYTICS.append("queries/").append(query.getJobId());
         Request request = new RequestBuilder(path)
         	.addParam("apiKey", apiKey)

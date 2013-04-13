@@ -61,7 +61,7 @@ public class Rest {
         headers.put("Authorization", "Basic " + printBase64Binary((user + ":" + password).getBytes()));
     }
     
-    public static String execute(URL service, Request request) throws IOException {
+    public static String execute(URL service, Request request) throws IOException, HttpException {
     	return new Rest(service).execute(request);
     }
 
@@ -75,7 +75,7 @@ public class Rest {
      * @throws IOException
      * @throws IllegalArgumentException if HTTPS is required, but the end-point is HTTP.
      */
-    public String execute(Request request) throws IOException {
+    public String execute(Request request) throws IOException, HttpException {
     	if (request.isHttpsRequired() && !isSecure()) {
     		throw new IllegalArgumentException(
     				"Request required HTTPS connection for HTTP end-point.");
@@ -128,7 +128,7 @@ public class Rest {
 
         if (conn.getResponseCode() != HttpURLConnection.HTTP_OK &&
         		conn.getResponseCode() != HttpURLConnection.HTTP_ACCEPTED) {
-            throw new IOException("Unexpected response from server: " +
+        	throw new HttpException("Unexpected response from server: " +
         		conn.getResponseCode() + ": " + conn.getResponseMessage() +
         		" ; service url " + serviceURL);
         }

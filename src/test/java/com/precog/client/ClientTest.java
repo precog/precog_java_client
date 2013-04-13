@@ -10,6 +10,7 @@ import com.precog.client.IngestResult;
 import com.precog.client.JsonFormat;
 import com.precog.client.PrecogClient;
 import com.precog.client.QueryResult;
+import com.precog.client.rest.HttpException;
 import com.precog.client.rest.Path;
 import com.precog.json.RawStringToJson;
 import com.precog.json.ToJson;
@@ -95,7 +96,7 @@ public class ClientTest {
         }
     }
     
-    public void expectCount(Path path0, int countExpected) throws IOException {
+    public void expectCount(Path path0, int countExpected) throws IOException, HttpException {
     	String path = path0.relativize().toString();
     	int count = 0;
     	int tries = 0;
@@ -116,7 +117,7 @@ public class ClientTest {
     }
 
     @Test
-    public void testAppend() throws IOException {
+    public void testAppend() throws IOException, HttpException {
     	Path path = generatePath();
         RawJson testJson = new RawJson("{\"test\":[{\"v\": 1}, {\"v\": 2}]}");
         TestData testData = new TestData(42, "Hello\" World", testJson);
@@ -126,7 +127,7 @@ public class ClientTest {
     }
 
     @Test
-    public void testAppendWithToJson() throws IOException {
+    public void testAppendWithToJson() throws IOException, HttpException {
         ToJson<String> toJson = new RawStringToJson();
         Path path = generatePath();
         String data = "{\"test\":[{\"v\": 1}, {\"v\": 2}]}";
@@ -138,7 +139,7 @@ public class ClientTest {
     }
 
     @Test
-    public void testAppendAllFromStringWithJsonStream() throws IOException {
+    public void testAppendAllFromStringWithJsonStream() throws IOException, HttpException {
     	Path path = generatePath();
         String rawJson = "{\"test\":[{\"v\": 1}, {\"v\": 2}]} {\"test\":[{\"v\": 2}, {\"v\": 3}]}";
         IngestResult result = client.appendAllFromString(path.toString(), rawJson, JsonFormat.JSON_STREAM);
@@ -147,7 +148,7 @@ public class ClientTest {
     }
 
     @Test
-    public void testAppendAllFromStringWithJsonArray() throws IOException {
+    public void testAppendAllFromStringWithJsonArray() throws IOException, HttpException {
     	Path path = generatePath();
         String rawJson = "[{\"test\":[{\"v\": 1}, {\"v\": 2}]},{\"test\":[{\"v\": 2}, {\"v\": 3}]}]";
         IngestResult result = client.appendAllFromString(path.toString(), rawJson, JsonFormat.JSON);
@@ -156,7 +157,7 @@ public class ClientTest {
     }
 
     @Test
-    public void testAppendAllFromStringWithCSV() throws IOException {
+    public void testAppendAllFromStringWithCSV() throws IOException, HttpException {
     	Path path = generatePath();
     	String csv = "a,b,c\n1,2,3\n\n,,tom\n\n";
         IngestResult result = client.appendAllFromString(path.toString(), csv, CsvFormat.CSV);
@@ -165,7 +166,7 @@ public class ClientTest {
     }
 
     @Test
-    public void testAppendRawUTF8() throws IOException {
+    public void testAppendRawUTF8() throws IOException, HttpException {
     	Path path = generatePath();
         String rawJson = "{\"test\":[{\"������������������������������\": 1}, {\"v\": 2}]}";
         client.appendAllFromString(path.toString(), rawJson, JsonFormat.JSON_STREAM);
@@ -173,7 +174,7 @@ public class ClientTest {
     }
 
     @Test
-    public void testRawJson() throws IOException {
+    public void testRawJson() throws IOException, HttpException {
         ToJson<Object> toJson = new GsonToJson();
 
         String testString = "{\"test\":[{\"v\":1},{\"v\":2}]}";
@@ -191,7 +192,7 @@ public class ClientTest {
     }
     
     @Test
-    public void testAppendAllFromCollection() throws IOException {
+    public void testAppendAllFromCollection() throws IOException, HttpException {
     	Path path = generatePath();
     	ArrayList<TestData> ts = new ArrayList<TestData>();
     	ts.add(new TestData(1, "asdf", new RawJson("asdf")));
@@ -203,7 +204,7 @@ public class ClientTest {
     }
     
     @Test
-    public void testDelete() throws IOException {
+    public void testDelete() throws IOException, HttpException {
     	Path path = generatePath();
     	TestData data = new TestData(1, "abc", new RawJson("[1,2,3]"));
     	IngestResult result = client.append(path.toString(), data);
@@ -214,7 +215,7 @@ public class ClientTest {
     }
 
     @Test
-    public void testOddCharacters() throws IOException {
+    public void testOddCharacters() throws IOException, HttpException {
         ToJson<Object> toJson = new GsonToJson();
         TestData testData = new TestData(1, "���", new RawJson(""));
 
@@ -231,7 +232,7 @@ public class ClientTest {
 
 
     @Test
-    public void testCreateAccount() throws IOException {
+    public void testCreateAccount() throws IOException, HttpException {
     	String email = generateEmail();
         AccountInfo account = PrecogClient.createAccount(getService(), email, password);
         assertNotNull(account);
@@ -241,7 +242,7 @@ public class ClientTest {
     }
 
     @Test
-    public void testDescribeAccount() throws IOException {
+    public void testDescribeAccount() throws IOException, HttpException {
     	String email = generateEmail();
         AccountInfo account0 = PrecogClient.createAccount(getService(), email, password);
         AccountInfo account1 = PrecogClient.describeAccount(getService(), email, password, account0.getAccountId());
@@ -249,14 +250,14 @@ public class ClientTest {
     }
 
     @Test
-    public void testQuery() throws IOException {
+    public void testQuery() throws IOException, HttpException {
     	QueryResult result = client.query("", "count(//non-existant)");
         assertNotNull(result);
         assertEquals("0", result.getData().get(0));
     }
     
     @Test
-    public void testQueryAsync() throws IOException {
+    public void testQueryAsync() throws IOException, HttpException {
     	Path path = generatePath();
     	List<TestData> data = Arrays.asList(
     			new TestData(1, "", null),
