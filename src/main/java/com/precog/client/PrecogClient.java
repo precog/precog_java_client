@@ -323,7 +323,6 @@ public class PrecogClient {
      * @param password user's password
      * @return Json string with the account Id
      * @throws IOException
-     * @see Service
      */
     public static AccountInfo createAccount(URL service, String email, String password) throws IOException {
         Request r = new RequestBuilder(Method.POST, Paths.ACCOUNTS.append("accounts/"))
@@ -345,7 +344,6 @@ public class PrecogClient {
      * @param password user's password
      * @return Json string with the account Id
      * @throws IOException
-     * @see Service#ProductionHttps
      */
     public static AccountInfo createAccount(String email, String password) throws IOException {
         return createAccount(PrecogClient.BETA_HTTPS, email, password);
@@ -363,7 +361,6 @@ public class PrecogClient {
      * @param accountId account's id number
      * @return account info
      * @throws IOException
-     * @see Service
      */
     public static AccountInfo describeAccount(URL service, String email, String password, String accountId) throws IOException {
     	Request request = new RequestBuilder()
@@ -603,9 +600,9 @@ public class PrecogClient {
      * @return result as Json string
      * @throws IOException
      */
-    public QueryResult query(String path0, String q) throws IOException {
-    	Path path = Paths.ANALYTICS.append(buildStoragePath(new Path(path0)));
-        Request request = new RequestBuilder(path)
+    public QueryResult query(String path, String q) throws IOException {
+    	Path path0 = Paths.ANALYTICS.append(buildStoragePath(new Path(path)));
+        Request request = new RequestBuilder(path0)
         	.addParam("apiKey", apiKey)
         	.addParam("q", q)
         	.addParam("format", "detailed")
@@ -638,27 +635,23 @@ public class PrecogClient {
      * This does <b>NOT</b> run the query in a new thread. It will still block
      * the current thread until the server responds.
      * 
-     * An example of using this may look like,
+     * An example of using {@link queryAsync(String)} to poll for results
+     * could look like:
      * 
      * <pre>
      * {@code
      * PrecogClient precog = ...;
-     * 
-     * // Submit a query and get back a Query object. 
-     * Query query = precog.queryAsync("foo/", "min(//bar)");
-     * 
-     * // Poll Precog repeatedly until the query has finished and the
-     * // results are ready. 
+     * Query query = precog.queryAsync("foo/", "min(//bar)"); 
      * QueryResult result = null;
      * while (result == null) {
      *     result = precog.queryResults(query);
      * }
-     * 
-     * // Print out the minimum of bar. 
      * Double min = Double.valueOf(result.data.get(0));
-     * println("Min of //bar is: " + min);
+     * println("Minimum is: " + min);
      * }
      * </pre>
+     * 
+     * This is ideal for long running queries.
      * 
      * @param path the base path to use in the query
      * @param q the query to execute

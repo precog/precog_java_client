@@ -28,6 +28,8 @@ import java.io.UnsupportedEncodingException;
 import java.net.URL;
 
 import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.List;
 import java.util.UUID;
 
 import static org.junit.Assert.*;
@@ -252,6 +254,24 @@ public class ClientTest {
         assertNotNull(result);
         assertEquals("0", result.getData().get(0));
     }
+    
+    @Test
+    public void testQueryAsync() throws IOException {
+    	Path path = generatePath();
+    	List<TestData> data = Arrays.asList(
+    			new TestData(1, "", null),
+    			new TestData(2, "", null),
+    			new TestData(3, "", null));
+    	client.appendAll(path.toString(), data);
+    	expectCount(path, 3);
+    	Query query = client.queryAsync("max((//" + path.relativize() + ").testInt)");
+    	QueryResult result = null;
+    	while (result == null) {
+    		result = client.queryResults(query);
+    	}
+    	double max = Double.valueOf(result.getData().get(0));
+    	assertEquals(3.0, max, 0.0);
+    }
 
     @Test
     public void testFromHeroku() throws UnsupportedEncodingException {
@@ -271,5 +291,4 @@ public class ClientTest {
         assertEquals(apiKey, client0.getApiKey());
         assertEquals(new Path(rootPath), client0.getBasePath());
     }
-
 }
