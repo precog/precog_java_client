@@ -83,4 +83,64 @@ public class AccountInfo {
     public void setPlan(AccountPlan plan) {
         this.plan = plan;
     }
+
+	@Override
+	public int hashCode() {
+		final int prime = 31;
+		int result = 1;
+		result = prime
+				* result
+				+ ((accountCreationDate == null) ? 0 : accountCreationDate
+						.hashCode());
+		result = prime * result
+				+ ((accountId == null) ? 0 : accountId.hashCode());
+		result = prime * result + ((apiKey == null) ? 0 : apiKey.hashCode());
+		result = prime * result + ((email == null) ? 0 : email.hashCode());
+		result = prime * result + ((plan == null) ? 0 : plan.hashCode());
+		result = prime * result
+				+ ((rootPath == null) ? 0 : rootPath.hashCode());
+		return result;
+	}
+
+	@Override
+	public boolean equals(Object obj) {
+		if (this == obj)
+			return true;
+		if (obj == null)
+			return false;
+		if (getClass() != obj.getClass())
+			return false;
+		AccountInfo other = (AccountInfo) obj;
+		if (accountCreationDate == null) {
+			if (other.accountCreationDate != null)
+				return false;
+		} else if (!accountCreationDate.equals(other.accountCreationDate))
+			return false;
+		if (accountId == null) {
+			if (other.accountId != null)
+				return false;
+		} else if (!accountId.equals(other.accountId))
+			return false;
+		if (apiKey == null) {
+			if (other.apiKey != null)
+				return false;
+		} else if (!apiKey.equals(other.apiKey))
+			return false;
+		if (email == null) {
+			if (other.email != null)
+				return false;
+		} else if (!email.equals(other.email))
+			return false;
+		if (plan == null) {
+			if (other.plan != null)
+				return false;
+		} else if (!plan.equals(other.plan))
+			return false;
+		if (rootPath == null) {
+			if (other.rootPath != null)
+				return false;
+		} else if (!rootPath.equals(other.rootPath))
+			return false;
+		return true;
+	}
 }

@@ -325,12 +325,14 @@ public class PrecogClient {
      * @throws IOException
      * @see Service
      */
-    public static String createAccount(URL service, String email, String password) throws IOException {
+    public static AccountInfo createAccount(URL service, String email, String password) throws IOException {
         Request r = new RequestBuilder(Method.POST, Paths.ACCOUNTS.append("accounts/"))
         	.setBody("{ \"email\": \"" + email + "\", \"password\": \"" + password + "\" }")
         	.setHttpsRequired(true)
         	.build();
-        return new Rest(service).execute(r);
+        Gson gson = new Gson();
+        AccountInfo account0 = gson.fromJson(Rest.execute(service, r), AccountInfo.class);
+        return PrecogClient.describeAccount(service, email, password, account0.getAccountId());
     }
 
     /**
@@ -345,7 +347,7 @@ public class PrecogClient {
      * @throws IOException
      * @see Service#ProductionHttps
      */
-    public static String createAccount(String email, String password) throws IOException {
+    public static AccountInfo createAccount(String email, String password) throws IOException {
         return createAccount(PrecogClient.BETA_HTTPS, email, password);
     }
 
@@ -363,12 +365,15 @@ public class PrecogClient {
      * @throws IOException
      * @see Service
      */
-    public static String describeAccount(URL service, String email, String password, String accountId) throws IOException {
-        return Rest.execute(service, new RequestBuilder()
+    public static AccountInfo describeAccount(URL service, String email, String password, String accountId) throws IOException {
+    	Request request = new RequestBuilder()
 			.setPath(Paths.ACCOUNTS.append("accounts/" + accountId))
 			.addBasicAuth(email, password)
 			.setHttpsRequired(true)
-			.build());
+			.build();
+        String json = Rest.execute(service, request);
+        Gson gson = new Gson();
+        return gson.fromJson(json, AccountInfo.class);
     }
 
     /**
@@ -384,7 +389,7 @@ public class PrecogClient {
      * @return account info
      * @throws IOException
      */
-    public static String describeAccount(String email, String password, String accountId) throws IOException {
+    public static AccountInfo describeAccount(String email, String password, String accountId) throws IOException {
         return describeAccount(PrecogClient.BETA_HTTPS, email, password, accountId);
     }
     
@@ -608,6 +613,22 @@ public class PrecogClient {
     }
     
     /**
+     * Executes a synchronous query relative to the specified base path. The
+     * HTTP connection will remain open for as long as the query is evaluating
+     * (potentially minutes).
+     *
+     * Not recommended for long-running queries, because if the connection is
+     * interrupted, there will be no way to retrieve the results of the query.
+     *
+     * @param q    quirrel query to excecute
+     * @return result as Json string
+     * @throws IOException
+     */
+    public QueryResult query(String q) throws IOException {
+    	return query("", q);
+    }
+    
+    /**
      * Runs an asynchronous query against Precog. An async query is a query
      * that simply returns a Job ID, rather than the query results. You can
      * then periodically poll for the results of the job/query.
@@ -652,6 +673,17 @@ public class PrecogClient {
     		.build();
     	String json = rest.execute(request);
     	return gson.fromJson(json, Query.class);
+    }
+    
+    /**
+     * Runs an asynchronous query against Precog. An async query is a query
+     * that simply returns a Job ID, rather than the query results. You can
+     * then periodically poll for the results of the job/query.
+     * 
+     * @see PrecogClient#queryAsync(String, String)
+     */
+    public Query queryAsync(String q) throws IOException {
+    	return queryAsync("", q);
     }
     
     /**

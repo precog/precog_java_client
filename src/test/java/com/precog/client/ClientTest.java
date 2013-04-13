@@ -1,5 +1,6 @@
 package com.precog.client;
 
+import com.google.gson.Gson;
 import com.google.gson.annotations.SerializedName;
 import com.google.gson.reflect.TypeToken;
 
@@ -17,6 +18,7 @@ import com.precog.json.gson.GsonToJson;
 import com.precog.json.gson.RawJson;
 
 import org.junit.BeforeClass;
+import org.junit.Ignore;
 import org.junit.Test;
 
 import javax.xml.bind.DatatypeConverter;
@@ -34,20 +36,24 @@ import static org.junit.Assert.*;
  * Unit test for basic client.
  */
 public class ClientTest {
+
+	// Maximum # of times to poll for successful ingests.
+    private static final int MAX_TRIES = 25;
     
     private static String generateEmail() {
     	return "java-test-" + UUID.randomUUID().toString() + "@precog.com";
     }
     
     private static Path generatePath() {
-    	return new Path(UUID.randomUUID().toString());
+    	return new Path("/test/" + UUID.randomUUID().toString());
     }
 
     public static String email = generateEmail();
     public static String password = "password";
     public static String testAccountId;
     public static String testApiKey;
-    public static PrecogClient testClient;
+    public static PrecogClient client;
+    public static Gson gson = new Gson();
 
     private static class TestData {
         public final int testInt;
@@ -66,18 +72,10 @@ public class ClientTest {
     @BeforeClass
     public static void beforeAll() throws Exception {
         URL svc = getService();
-
-        String result = PrecogClient.createAccount(svc, email, password);
-        AccountInfo res = GsonFromJson.of(new TypeToken<AccountInfo>() {
-        }).deserialize(result);
-        testAccountId = res.getAccountId();
-
-        result = PrecogClient.describeAccount(svc, email, password, testAccountId);
-        res = GsonFromJson.of(new TypeToken<AccountInfo>() {
-        }).deserialize(result);
-        testApiKey = res.getApiKey();
-
-        testClient = new PrecogClient(svc, testApiKey, testAccountId);
+        AccountInfo account = PrecogClient.createAccount(svc, email, password);
+        testAccountId = account.getAccountId();
+        testApiKey = account.getApiKey();
+        client = new PrecogClient(svc, account);
     }
 
     /**
@@ -94,38 +92,82 @@ public class ClientTest {
         	return PrecogClient.fromHost(host);
         }
     }
+    
+    public void expectCount(Path path0, int countExpected) throws IOException {
+    	String path = path0.relativize().toString();
+    	int count = 0;
+    	int tries = 0;
+    	while (count != countExpected && tries < MAX_TRIES) {
+    		if (tries == 0) {
+	    		try {
+	    			Thread.sleep(500);
+	    		} catch (InterruptedException ex) {
+	    			// Meh.
+	    		}
+    		}
+    		
+    		tries += 1;
+    		QueryResult result = client.query("", "count(//" + path + ")");
+    		count = Integer.valueOf(result.getData().get(0));
+    	}
+    	assertEquals(countExpected, count);
+    }
 
     @Test
-    public void testStore() throws IOException {
+    public void testAppend() throws IOException {
+    	Path path = generatePath();
         RawJson testJson = new RawJson("{\"test\":[{\"v\": 1}, {\"v\": 2}]}");
         TestData testData = new TestData(42, "Hello\" World", testJson);
-        testClient.append("/test/", testData);
+        IngestResult result = client.append(path.toString(), testData);
+        assertEquals(1, result.getIngested());
+        expectCount(path, 1);
     }
 
     @Test
-    public void testStoreStrToJson() throws IOException {
+    public void testAppendWithToJson() throws IOException {
         ToJson<String> toJson = new RawStringToJson();
+        Path path = generatePath();
         String data = "{\"test\":[{\"v\": 1}, {\"v\": 2}]}";
-        testClient.append("/test/", data, toJson);
+        IngestResult result = client.append(path.toString(), data, toJson);
+        assertEquals(1, result.getIngested());
+        expectCount(path, 1);
+        QueryResult qresult = client.query("count(//" + path.relativize() + ")");
+        assertFalse(qresult.getData().get(0).startsWith("\""));
     }
 
     @Test
-    public void testStoreRawJsonString() throws IOException {
-        String rawJson = "{\"test\":[{\"v\": 1}, {\"v\": 2}]}";
-        testClient.appendAllFromString("/test/", rawJson, JsonFormat.JSON_STREAM);
-    }
-
-    @Test
-    public void testStoreRawUTF8() throws IOException {
-        String rawJson = "{\"test\":[{\"������������������������������\": 1}, {\"v\": 2}]}";
-        testClient.appendAllFromString("/test/", rawJson, JsonFormat.JSON_STREAM);
-    }
-
-    @Test
-    public void testIngestCSV() throws IOException {
-    	String csv = "a,b,c\n1,2,3\n\n";
-        IngestResult result = testClient.appendAllFromString("/test/", csv, CsvFormat.CSV);
+    public void testAppendAllFromStringWithJsonStream() throws IOException {
+    	Path path = generatePath();
+        String rawJson = "{\"test\":[{\"v\": 1}, {\"v\": 2}]} {\"test\":[{\"v\": 2}, {\"v\": 3}]}";
+        IngestResult result = client.appendAllFromString(path.toString(), rawJson, JsonFormat.JSON_STREAM);
         assertEquals(2, result.getIngested());
+        expectCount(path, 2);
+    }
+
+    @Test
+    public void testAppendAllFromStringWithJsonArray() throws IOException {
+    	Path path = generatePath();
+        String rawJson = "[{\"test\":[{\"v\": 1}, {\"v\": 2}]},{\"test\":[{\"v\": 2}, {\"v\": 3}]}]";
+        IngestResult result = client.appendAllFromString(path.toString(), rawJson, JsonFormat.JSON);
+        assertEquals(2, result.getIngested());
+        expectCount(path, 2);
+    }
+
+    @Test
+    public void testAppendAllFromStringWithCSV() throws IOException {
+    	Path path = generatePath();
+    	String csv = "a,b,c\n1,2,3\n\n,,tom\n\n";
+        IngestResult result = client.appendAllFromString(path.toString(), csv, CsvFormat.CSV);
+        assertEquals(4, result.getIngested());
+        expectCount(path, 4);
+    }
+
+    @Test
+    public void testAppendRawUTF8() throws IOException {
+    	Path path = generatePath();
+        String rawJson = "{\"test\":[{\"������������������������������\": 1}, {\"v\": 2}]}";
+        client.appendAllFromString(path.toString(), rawJson, JsonFormat.JSON_STREAM);
+        expectCount(path, 1);
     }
 
     @Test
@@ -148,25 +190,25 @@ public class ClientTest {
     
     @Test
     public void testAppendAllFromCollection() throws IOException {
+    	Path path = generatePath();
     	ArrayList<TestData> ts = new ArrayList<TestData>();
     	ts.add(new TestData(1, "asdf", new RawJson("asdf")));
     	ts.add(new TestData(2, "qwerty", new RawJson("[1,2,3]")));
     	ts.add(new TestData(3, "zxcv", new RawJson("1111")));
-    	testClient.appendAll("/test/appendAll", ts);
-    	
-    	int count = 0;
-    	int i = 10;
-    	while (count == 0 && i > 0) {
-    		try {
-    			Thread.sleep(500);
-    		} catch (InterruptedException ex) {
-    			// Don't really care...
-    		}
-    		QueryResult result = testClient.query("/test/", "count(//appendAll)");
-    		count = Integer.valueOf(result.getData().get(0));
-    		i -= 1;
-    	}
-    	assertEquals(3, count);
+    	IngestResult result = client.appendAll(path.toString(), ts);
+    	assertEquals(3, result.getIngested());
+    	expectCount(path, 3);
+    }
+    
+    @Test
+    public void testDelete() throws IOException {
+    	Path path = generatePath();
+    	TestData data = new TestData(1, "abc", new RawJson("[1,2,3]"));
+    	IngestResult result = client.append(path.toString(), data);
+    	assertEquals(1, result.getIngested());
+    	expectCount(path, 1);
+    	client.delete(path.toString());
+    	expectCount(path, 0);
     }
 
     @Test
@@ -188,43 +230,46 @@ public class ClientTest {
 
     @Test
     public void testCreateAccount() throws IOException {
-        String result = PrecogClient.createAccount(getService(), generateEmail(), password);
-        assertNotNull(result);
-        AccountInfo res = GsonFromJson.of(new TypeToken<AccountInfo>() {
-        }).deserialize(result);
-        String accountId = res.getAccountId();
-        assertNotNull(accountId);
-        assertNotSame(testAccountId, accountId);
+    	String email = generateEmail();
+        AccountInfo account = PrecogClient.createAccount(getService(), email, password);
+        assertNotNull(account);
+        assertNotSame(testAccountId, account.getAccountId());
+        assertNotNull(account.getApiKey());
+        assertEquals(email, account.getEmail());
     }
 
     @Test
     public void testDescribeAccount() throws IOException {
-        String result = PrecogClient.describeAccount(testClient.getService(), email, password, testAccountId);
-        assertNotNull(result);
-        AccountInfo res = GsonFromJson.of(new TypeToken<AccountInfo>() {
-        }).deserialize(result);
-        assertEquals(testAccountId, res.getAccountId());
+    	String email = generateEmail();
+        AccountInfo account0 = PrecogClient.createAccount(getService(), email, password);
+        AccountInfo account1 = PrecogClient.describeAccount(getService(), email, password, account0.getAccountId());
+        assertEquals(account0, account1);
     }
 
     @Test
     public void testQuery() throws IOException {
-    	QueryResult result = testClient.query("", "count(//non-existant)");
+    	QueryResult result = client.query("", "count(//non-existant)");
         assertNotNull(result);
         assertEquals("0", result.getData().get(0));
     }
 
     @Test
     public void testFromHeroku() throws UnsupportedEncodingException {
-        String user="user";
-        String password="password";
-        String host= "beta.host.com";
-        String accountId="12345";
-        String apiKey="AAAAA-BBBBB-CCCCCC-DDDDD";
-        String rootPath ="/00001234/";
-        String values=user+":"+password+":"+host+":"+accountId+":"+apiKey+":"+ rootPath;
-        String token= DatatypeConverter.printBase64Binary(values.getBytes("UTF-8"));
-        PrecogClient precogApi=PrecogClient.fromHeroku(token);
-        assertNotNull(precogApi);
+        String user = "user";
+        String password = "password";
+        String host = "beta.host.com";
+        String accountId = "12345";
+        String apiKey = "AAAAA-BBBBB-CCCCCC-DDDDD";
+        String rootPath = "/00001234/";
+        String values = user+":"+password+":"+host+":"+accountId+":"+apiKey+":"+ rootPath;
+        String token = DatatypeConverter.printBase64Binary(values.getBytes("UTF-8"));
+        
+        PrecogClient client0 = PrecogClient.fromHeroku(token);
+        
+        assertTrue(client0.getService().toString().contains(host));
+        assertEquals(accountId, client0.getAccountId());
+        assertEquals(apiKey, client0.getApiKey());
+        assertEquals(new Path(rootPath), client0.getBasePath());
     }
 
 }
