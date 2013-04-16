@@ -99,7 +99,7 @@ public class PrecogClient {
      * @param basePath The base path to use for all requests
      * @param gson An optional Gson object to use for JSON serialization
      */
-    public PrecogClient(URL service, String apiKey, String accountId, String basePath, Gson gson) {
+    PrecogClient(URL service, String apiKey, String accountId, String basePath, Gson gson) {
         this.service = service;
         this.apiKey = apiKey;
         this.accountId = accountId;
@@ -330,6 +330,7 @@ public class PrecogClient {
      * @return Json string with the account Id
      * @throws IOException if there is a problem with the network
      * @throws HttpException if the server sends an unexpected response
+     * @throws IllegalArgumentException if the service is not secure (HTTPS)
      */
     public static AccountInfo createAccount(URL service, String email, String password)
     		throws IOException, HttpException {
@@ -353,6 +354,7 @@ public class PrecogClient {
      * @return Json string with the account Id
      * @throws IOException if there is a problem with the network
      * @throws HttpException if the server sends an unexpected response
+     * @throws IllegalArgumentException if the service is not secure (HTTPS)
      */
     public static AccountInfo createAccount(String email, String password)
     		throws IOException, HttpException {
@@ -372,6 +374,7 @@ public class PrecogClient {
      * @return account info
      * @throws IOException if there is a problem with the network
      * @throws HttpException if the server sends an unexpected response
+     * @throws IllegalArgumentException if the service is not secure (HTTPS)
      */
     public static AccountInfo describeAccount(URL service, String email, String password, String accountId)
     		throws IOException, HttpException {
@@ -398,6 +401,7 @@ public class PrecogClient {
      * @return account info
      * @throws IOException if there is a problem with the network
      * @throws HttpException if the server sends an unexpected response
+     * @throws IllegalArgumentException if the service is not secure (HTTPS)
      */
     public static AccountInfo describeAccount(String email, String password, String accountId)
     		throws IOException, HttpException {

@@ -2,7 +2,6 @@ package com.precog.client;
 
 import com.google.gson.Gson;
 import com.google.gson.annotations.SerializedName;
-import com.google.gson.reflect.TypeToken;
 
 import com.precog.client.AccountInfo;
 import com.precog.client.CsvFormat;
@@ -59,8 +58,12 @@ public class ClientTest {
     public static Gson gson = new Gson();
 
     private static class TestData {
-        public final int testInt;
-        public final String testStr;
+        @SuppressWarnings("unused")
+		public final int testInt;
+        
+        @SuppressWarnings("unused")
+		public final String testStr;
+        
         @SerializedName("~raw")
         public final RawJson testRaw;
 
@@ -247,6 +250,23 @@ public class ClientTest {
         AccountInfo account0 = PrecogClient.createAccount(getService(), email, password);
         AccountInfo account1 = PrecogClient.describeAccount(getService(), email, password, account0.getAccountId());
         assertEquals(account0, account1);
+    }
+    
+    @Test(expected=IllegalArgumentException.class)
+    public void testCreateAccountRequiresHttps() throws IOException, HttpException {
+    	String email = generateEmail();
+    	URL url0 = getService();
+    	URL url = new URL("http", url0.getHost(), url0.getPort(), url0.getPath());
+    	PrecogClient.createAccount(url, email, password);
+    }
+    
+    @Test(expected=IllegalArgumentException.class)
+    public void testDescribeAccountRequiresHttps() throws IOException, HttpException {
+    	String email = generateEmail();
+    	URL url0 = getService();
+    	URL url = new URL("http", url0.getHost(), url0.getPort(), url0.getPath());
+    	AccountInfo account = PrecogClient.createAccount(url0, email, password);
+    	PrecogClient.describeAccount(url, email, password, account.getAccountId());
     }
 
     @Test
