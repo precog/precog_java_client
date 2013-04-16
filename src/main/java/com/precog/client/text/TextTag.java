@@ -49,6 +49,30 @@ public class TextTag {
 	public void setPosition(Position position) {
 		this.position = position;
 	}
+	
+	private static String spaces(int num) {
+		if (num == 0) {
+			return "";
+		} else if (num == 1) {
+			return " ";
+		} else {
+			return spaces(num / 2) + spaces(num / 2 + num % 2);
+		}
+				
+	}
+	
+	@Override
+	public String toString() {
+		String line = "L" + position.getLine() + ": ";
+		StringBuilder sb = new StringBuilder();
+		sb.append(line)
+		  .append(position.getText())
+		  .append('\n')
+		  .append(spaces(line.length() + position.getColumn() - 1))
+		  .append("^ ")
+		  .append(message);
+		return sb.toString();
+	}
 
 	@Override
 	public int hashCode() {

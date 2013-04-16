@@ -11,7 +11,6 @@ import com.precog.client.rest.HttpException;
 import com.precog.client.rest.Path;
 import com.precog.json.RawStringToJson;
 import com.precog.json.ToJson;
-import com.precog.json.gson.GsonFromJson;
 import com.precog.json.gson.GsonToJson;
 import com.precog.json.gson.RawJson;
 
