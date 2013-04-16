@@ -60,6 +60,7 @@
       <artifactId>gson</artifactId>
       <version>2.2.2</version>
       <scope>compile</scope>
+      <optional>true</optional>
     </dependency>
     <dependency>
       <groupId>junit</groupId>
@@ -95,7 +96,7 @@
           </execution>
         </executions>
       </plugin>
-      <!-- plugin>
+      <plugin>
         <groupId>org.apache.maven.plugins</groupId>
         <artifactId>maven-shade-plugin</artifactId>
         <version>2.0</version>
@@ -108,7 +109,7 @@
           <relocations>
             <relocation>
               <pattern>com.google.gson</pattern>
-              <shadedPattern>com.precog.gson</shadedPattern>
+              <shadedPattern>com.precog.json.gson</shadedPattern>
             </relocation>
           </relocations>
           <transformers>
@@ -123,7 +124,7 @@
             </goals>
           </execution>
         </executions>
-      </plugin -->
+      </plugin>
     </plugins>
   </build>
 </project>
