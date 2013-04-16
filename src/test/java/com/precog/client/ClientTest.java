@@ -1,13 +1,10 @@
 package com.precog.client;
 
 import com.google.gson.Gson;
-import com.google.gson.annotations.SerializedName;
 import com.google.gson.reflect.TypeToken;
 
 import com.precog.client.AccountInfo;
-import com.precog.client.DelimitedFormat;
 import com.precog.client.AppendResult;
-import com.precog.client.JsonFormat;
 import com.precog.client.PrecogClient;
 import com.precog.client.QueryResult;
 import com.precog.client.rest.HttpException;
@@ -19,7 +16,6 @@ import com.precog.json.gson.GsonToJson;
 import com.precog.json.gson.RawJson;
 
 import org.junit.BeforeClass;
-import org.junit.Ignore;
 import org.junit.Test;
 
 import javax.xml.bind.DatatypeConverter;

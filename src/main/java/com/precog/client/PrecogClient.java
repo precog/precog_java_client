@@ -8,7 +8,6 @@ import com.precog.client.rest.RequestBuilder;
 import com.precog.client.rest.Response;
 import com.precog.client.rest.Rest;
 import com.precog.json.ToJson;
-import com.precog.json.gson.GsonToJson;
 
 import com.google.gson.Gson;
 import com.google.gson.stream.JsonReader;
@@ -25,7 +24,6 @@ import java.io.Reader;
 import java.net.MalformedURLException;
 import java.net.URL;
 import java.util.Iterator;
-import java.util.logging.Level;
 import java.util.logging.Logger;
 
 import javax.xml.bind.DatatypeConverter;
@@ -907,9 +905,12 @@ public class PrecogClient {
 			this.iter = iter;
 		}
 		
-		@SuppressWarnings("unchecked")
-		JsonIterator(Gson gson, Iterator<T> iter) {
-			this.toJson = (ToJson<T>) new GsonToJson(gson);
+		JsonIterator(final Gson gson, Iterator<T> iter) {
+			this.toJson = new ToJson<T>() {
+				public String serialize(T value) {
+					return gson.toJson(value);
+				}
+			};
 			this.iter = iter;
 		}
 		
