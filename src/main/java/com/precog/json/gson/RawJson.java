@@ -2,9 +2,9 @@ package com.precog.json.gson;
 
 /**
  * A type wrapper for raw JSON strings to make it easier to embed such strings in 
- * an object being serialized with GSON. 
+ * an object being serialized with GSON or other reflection-based JSON serializers. 
  *
- * @author knuttycombe
+ * @author Kris Nuttycombe
  */
 public class RawJson {
 	private final String json;

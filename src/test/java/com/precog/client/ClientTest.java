@@ -40,7 +40,7 @@ import static org.junit.Assert.*;
 public class ClientTest {
 
 	// Maximum # of times to poll for successful ingests.
-    private static final int MAX_TRIES = 25;
+    private static final int MAX_TRIES = 50;
     
     private static String generateEmail() {
     	return "java-test-" + UUID.randomUUID().toString() + "@precog.com";
@@ -114,7 +114,7 @@ public class ClientTest {
     		
     		tries += 1;
     		QueryResult result = client.query("", "count(//" + path + ")");
-    		count = Integer.valueOf(result.getData().get(0));
+    		count = result.get(0, Integer.class);
     	}
     	assertEquals(countExpected, count);
     }
@@ -138,7 +138,7 @@ public class ClientTest {
         assertEquals(1, result.getIngested());
         expectCount(path, 1);
         QueryResult qresult = client.query("count(//" + path.relativize() + ")");
-        assertFalse(qresult.getData().get(0).startsWith("\""));
+        assertFalse(qresult.get(0).startsWith("\""));
     }
 
     @Test
@@ -273,7 +273,7 @@ public class ClientTest {
     public void testQuery() throws IOException, HttpException {
     	QueryResult result = client.query("", "count(//non-existant)");
         assertNotNull(result);
-        assertEquals("0", result.getData().get(0));
+        assertEquals("0", result.get(0));
     }
     
     @Test
@@ -290,7 +290,7 @@ public class ClientTest {
     	while (result == null) {
     		result = client.queryResults(query);
     	}
-    	double max = Double.valueOf(result.getData().get(0));
+    	double max = result.get(0, Double.class);
     	assertEquals(3.0, max, 0.0);
     }
 

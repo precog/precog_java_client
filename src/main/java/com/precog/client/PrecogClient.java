@@ -640,6 +640,7 @@ public class PrecogClient {
         	.addParam("format", "detailed")
         	.build();
         QueryResult result = gson.fromJson(rest.execute(request), QueryResult.class);
+        result.setGson(gson);
         return result;
     }
     
@@ -733,6 +734,7 @@ public class PrecogClient {
         String json = rest.execute(request);
         if (json != null && json != "") {
         	QueryResult result = gson.fromJson(json, QueryResult.class);
+        	result.setGson(gson);
         	return result;
         } else {
         	return null;

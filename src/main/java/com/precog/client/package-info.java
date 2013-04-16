@@ -71,7 +71,7 @@
  *         // Nonetheless, let's run some queries against our people data set.
  *         
  *         QueryResult result = client.query("count(//people)");
- *         System.out.println("# of people: " + Long.valueOf(result.getData().get(0)));
+ *         System.out.println("# of people: " + result.get(0, Long.class));
  *         
  *         // We can also run what we call an asynchronous query. What this means
  *         // is that instead of waiting for the results of the query, Precog will
@@ -85,7 +85,7 @@
  *         while (result == null) {
  *         	   result = client.queryResults(query);
  *         }
- *         System.out.println("Mean age: " + Double.valueOf(result.getData().get(0)));
+ *         System.out.println("Mean age: " + result.get(0, Double.class));
  *     }
  * }
  * 
