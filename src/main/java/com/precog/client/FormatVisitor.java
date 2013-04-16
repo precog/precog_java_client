@@ -10,5 +10,5 @@ package com.precog.client;
  */
 public interface FormatVisitor<A> {
 	public A visitJsonFormat(JsonFormat format);
-	public A visitCsvFormat(CsvFormat format);
+	public A visitCsvFormat(DelimitedFormat format);
 }

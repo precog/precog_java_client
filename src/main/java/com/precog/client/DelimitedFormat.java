@@ -13,49 +13,24 @@ import com.precog.client.rest.ContentType;
  * 
  * @author Tom Switzer <switzer@precog.com>
  */
-public class CsvFormat implements Format {
-	
-	/**
-	 * A CSV format for comma-separated values. This format uses commas as
-	 * separators, double-quotes for quoting values, and double-quotes to
-	 * escape values.
-	 */
-	public final static CsvFormat CSV = new CsvFormat(',');
-	
-	/**
-	 * A CSV format for tab-separated values. This format uses tabs as
-	 * separators, double-quotes for quoting values, and double-quotes to
-	 * escape values.
-	 */
-	public final static CsvFormat TSV = new CsvFormat('\t');
-	
-	/** An alias for {@link TSV}. */
-	public final static CsvFormat TAB = new CsvFormat('\t');
-	
-	/**
-	 * A CSV format for semicolon-separated values. This format uses semicolons
-	 * as separators, double-quotes for quoting values, and double-quotes to
-	 * escape values.
-	 */
-	public final static CsvFormat SSV = new CsvFormat(';');
-	
+public class DelimitedFormat implements Format {
 	
 	private final char delim;
 	private final char quote;
 	private final char escape;
 	
 	/**
-	 * Construct a {@link CsvFormat} that uses {@code delim} as delimiter, '"'
+	 * Construct a {@link DelimitedFormat} that uses {@code delim} as delimiter, '"'
 	 * for quoted values, and '"' to escape quotes in a quoted value.
 	 * 
 	 * @param delim the value delimiter to use
 	 */
-	public CsvFormat(char delim) {
+	public DelimitedFormat(char delim) {
 		this(delim, '"', '"');
 	}
 	
 	/**
-	 * Constrcuts a {@link CsvFormat} that uses {@code delim} as a delimiter,
+	 * Constrcuts a {@link DelimitedFormat} that uses {@code delim} as a delimiter,
 	 * {@code quote} to quote values, and {@code escape} to escape quotes
 	 * within a quoted value.
 	 * 
@@ -63,7 +38,7 @@ public class CsvFormat implements Format {
 	 * @param quote the quotation charater to use (eg. '"' or '\'')
 	 * @param escape the escape character to escape quotes in a quoted value
 	 */
-	public CsvFormat(char delim, char quote, char escape) {
+	public DelimitedFormat(char delim, char quote, char escape) {
 		super();
 		this.delim = delim;
 		this.quote = quote;

@@ -5,15 +5,23 @@ import com.precog.client.rest.Method;
 import com.precog.client.rest.Path;
 import com.precog.client.rest.Request;
 import com.precog.client.rest.RequestBuilder;
+import com.precog.client.rest.Response;
 import com.precog.client.rest.Rest;
 import com.precog.json.ToJson;
 import com.precog.json.gson.GsonToJson;
 
 import com.google.gson.Gson;
+import com.google.gson.stream.JsonReader;
+import com.google.gson.stream.JsonToken;
+import com.google.gson.stream.JsonWriter;
 
+import java.io.BufferedReader;
 import java.io.File;
+import java.io.FileWriter;
 import java.io.IOException;
 import java.io.InputStream;
+import java.io.InputStreamReader;
+import java.io.Reader;
 import java.net.MalformedURLException;
 import java.net.URL;
 import java.util.Iterator;
@@ -333,13 +341,14 @@ public class PrecogClient {
      * @throws IllegalArgumentException if the service is not secure (HTTPS)
      */
     public static AccountInfo createAccount(URL service, String email, String password)
-    		throws IOException, HttpException {
+    		throws HttpException {
         Request r = new RequestBuilder(Method.POST, Paths.ACCOUNTS.append("accounts/"))
         	.setBody("{ \"email\": \"" + email + "\", \"password\": \"" + password + "\" }")
         	.setHttpsRequired(true)
         	.build();
+        Response response = Rest.execute(service, r);
         Gson gson = new Gson();
-        AccountInfo account0 = gson.fromJson(Rest.execute(service, r), AccountInfo.class);
+        AccountInfo account0 = gson.fromJson(response.asString(), AccountInfo.class);
         return PrecogClient.describeAccount(service, email, password, account0.getAccountId());
     }
 
@@ -357,7 +366,7 @@ public class PrecogClient {
      * @throws IllegalArgumentException if the service is not secure (HTTPS)
      */
     public static AccountInfo createAccount(String email, String password)
-    		throws IOException, HttpException {
+    		throws HttpException {
         return createAccount(PrecogClient.BETA_HTTPS, email, password);
     }
 
@@ -377,13 +386,13 @@ public class PrecogClient {
      * @throws IllegalArgumentException if the service is not secure (HTTPS)
      */
     public static AccountInfo describeAccount(URL service, String email, String password, String accountId)
-    		throws IOException, HttpException {
+    		throws HttpException {
     	Request request = new RequestBuilder()
 			.setPath(Paths.ACCOUNTS.append("accounts/" + accountId))
 			.addBasicAuth(email, password)
 			.setHttpsRequired(true)
 			.build();
-        String json = Rest.execute(service, request);
+        String json = Rest.execute(service, request).asString();
         Gson gson = new Gson();
         return gson.fromJson(json, AccountInfo.class);
     }
@@ -404,7 +413,7 @@ public class PrecogClient {
      * @throws IllegalArgumentException if the service is not secure (HTTPS)
      */
     public static AccountInfo describeAccount(String email, String password, String accountId)
-    		throws IOException, HttpException {
+    		throws HttpException {
         return describeAccount(PrecogClient.BETA_HTTPS, email, password, accountId);
     }
     
@@ -424,11 +433,11 @@ public class PrecogClient {
      * @throws IOException if there is a problem with the network
      * @throws HttpException if the server sends an unexpected response
      */
-    public IngestResult appendAllFromString(String path, String contents, Format format)
-    		throws IOException, HttpException {
+    public AppendResult appendAllFromString(String path, String contents, Format format)
+    		throws HttpException {
     	Request request = new RequestBuilder(ingestRequest(path, format))
     		.setBody(contents).build();
-    	return gson.fromJson(rest.execute(request), IngestResult.class);
+    	return gson.fromJson(rest.execute(request).asString(), AppendResult.class);
     }
     
     /**
@@ -453,11 +462,11 @@ public class PrecogClient {
      * @throws IOException if there is a problem with the network
      * @throws HttpException if the server sends an unexpected response
      */
-    public IngestResult appendAllFromFile(String path, File file, Format format)
-    		throws IOException, HttpException {
+    public AppendResult appendAllFromFile(String path, File file, Format format)
+    		throws HttpException {
     	Request request = new RequestBuilder(ingestRequest(path, format))
     		.setBody(file).build();
-    	return gson.fromJson(rest.execute(request), IngestResult.class);
+    	return gson.fromJson(rest.execute(request).asString(), AppendResult.class);
     }
 
     /**
@@ -475,11 +484,11 @@ public class PrecogClient {
      * @throws IOException if there is a problem with the network
      * @throws HttpException if the server sends an unexpected response
      */
-    public IngestResult appendAllFromInputStream(String path, InputStream in, Format format)
-    		throws IOException, HttpException {
+    public AppendResult appendAllFromInputStream(String path, InputStream in, Format format)
+    		throws HttpException {
     	Request request = new RequestBuilder(ingestRequest(path, format))
     		.setBody(in).build();
-    	return gson.fromJson(rest.execute(request), IngestResult.class);
+    	return gson.fromJson(rest.execute(request).asString(), AppendResult.class);
     }
     	
     // Builds the bulk of an ingest request -- everything but the body.
@@ -500,7 +509,7 @@ public class PrecogClient {
 				return request;
 			}
 
-			public Request visitCsvFormat(CsvFormat format) {
+			public Request visitCsvFormat(DelimitedFormat format) {
 				return new RequestBuilder(request)
 					.addParam("delimiter", "" + format.getDelimiter())
 					.addParam("quote", "" + format.getQuote())
@@ -523,8 +532,8 @@ public class PrecogClient {
      * @param obj The object to serialize to JSON and store in the VFS
      * @throws IOException
      */
-    public IngestResult append(String path, Object obj)
-    		throws IOException, HttpException {
+    public AppendResult append(String path, Object obj)
+    		throws HttpException {
     	String json = gson.toJson(obj);
     	return appendAllFromString(path, json, JsonFormat.JSON_STREAM);
     }
@@ -537,8 +546,8 @@ public class PrecogClient {
      * @throws IOException if there is a problem with the network
      * @throws HttpException if the server sends an unexpected response
      */
-    public <T> IngestResult appendAll(String path, Iterable<T> coll)
-    		throws IOException, HttpException {
+    public <T> AppendResult appendAll(String path, Iterable<T> coll)
+    		throws HttpException {
     	InputStream in = new JsonStream(new JsonIterator<T>(gson, coll.iterator()));
     	return appendAllFromInputStream(path, in, JsonFormat.JSON_STREAM);
     }
@@ -555,8 +564,8 @@ public class PrecogClient {
      * @throws IOException if there is a problem with the network
      * @throws HttpException if the server sends an unexpected response
      */
-    public <T> IngestResult append(String path, T obj, ToJson<T> toJson)
-    		throws IOException, HttpException {
+    public <T> AppendResult append(String path, T obj, ToJson<T> toJson)
+    		throws HttpException {
     	String json = toJson.serialize(obj);
     	return appendAllFromString(path, json, JsonFormat.JSON_STREAM);
     }
@@ -569,8 +578,8 @@ public class PrecogClient {
      * @throws IOException if there is a problem with the network
      * @throws HttpException if the server sends an unexpected response
      */
-    public <T> IngestResult appendAll(String path, Iterable<T> coll, ToJson<T> toJson)
-    		throws IOException, HttpException {
+    public <T> AppendResult appendAll(String path, Iterable<T> coll, ToJson<T> toJson)
+    		throws HttpException {
     	InputStream in = new JsonStream(new JsonIterator<T>(toJson, coll.iterator()));
     	return appendAllFromInputStream(path, in, JsonFormat.JSON_STREAM);
     }
@@ -587,8 +596,8 @@ public class PrecogClient {
      * @throws IOException if there is a problem with the network
      * @throws HttpException if the server sends an unexpected response
      */
-    public IngestResult uploadFile(String path, File file, Format format)
-    		throws IOException, HttpException {
+    public AppendResult uploadFile(String path, File file, Format format)
+    		throws HttpException {
     	delete(path);
     	return appendAllFromFile(path, file, format);
     }
@@ -612,11 +621,15 @@ public class PrecogClient {
      * @throws IOException if there is a problem with the network
      * @throws HttpException if the server sends an unexpected response
      */
-    public void delete(String path) throws IOException, HttpException {
+    public void delete(String path) throws HttpException {
     	Path path0 = Paths.INGEST.append(buildStoragePath(new Path(path)));
     	rest.execute(new RequestBuilder(Method.DELETE, path0)
     		.addParam("apiKey", apiKey).build());
     }
+    
+    
+    // ANALYTICS
+    
 
     /**
      * Executes a synchronous query relative to the specified base path. The
@@ -632,14 +645,14 @@ public class PrecogClient {
      * @throws IOException if there is a problem with the network
      * @throws HttpException if the server sends an unexpected response
      */
-    public QueryResult query(String path, String q) throws IOException, HttpException {
+    public QueryResult query(String path, String q) throws HttpException {
     	Path path0 = Paths.ANALYTICS.append(buildStoragePath(new Path(path)));
         Request request = new RequestBuilder(path0)
         	.addParam("apiKey", apiKey)
         	.addParam("q", q)
         	.addParam("format", "detailed")
         	.build();
-        QueryResult result = gson.fromJson(rest.execute(request), QueryResult.class);
+        QueryResult result = gson.fromJson(rest.execute(request).asString(), QueryResult.class);
         result.setGson(gson);
         return result;
     }
@@ -657,7 +670,7 @@ public class PrecogClient {
      * @throws IOException if there is a problem with the network
      * @throws HttpException if the server sends an unexpected response
      */
-    public QueryResult query(String q) throws IOException, HttpException {
+    public QueryResult query(String q) throws HttpException {
     	return query("", q);
     }
     
@@ -693,7 +706,7 @@ public class PrecogClient {
      * @throws IOException if there is a problem with the network
      * @throws HttpException if the server sends an unexpected response
      */
-    public Query queryAsync(String path, String q) throws IOException, HttpException {
+    public Query queryAsync(String path, String q) throws HttpException {
     	Path prefixPath = basePath.append(new Path(path).stripTrailingSlash());
     	Path path0 = Paths.ANALYTICS.append("queries");
     	Request request = new RequestBuilder(Method.POST, path0)
@@ -701,7 +714,7 @@ public class PrecogClient {
     		.addParam("q", q)
     		.addParam("prefixPath", prefixPath.toString())
     		.build();
-    	String json = rest.execute(request);
+    	String json = rest.execute(request).asString();
     	return gson.fromJson(json, Query.class);
     }
     
@@ -712,7 +725,7 @@ public class PrecogClient {
      * 
      * @see PrecogClient#queryAsync(String, String)
      */
-    public Query queryAsync(String q) throws IOException, HttpException {
+    public Query queryAsync(String q) throws HttpException {
     	return queryAsync("", q);
     }
     
@@ -726,12 +739,12 @@ public class PrecogClient {
      * @throws IOException if there is a problem with the network
      * @throws HttpException if the server sends an unexpected response
      */
-    public QueryResult queryResults(Query query) throws IOException, HttpException {
+    public QueryResult queryResults(Query query) throws HttpException {
     	Path path = Paths.ANALYTICS.append("queries/").append(query.getJobId());
         Request request = new RequestBuilder(path)
         	.addParam("apiKey", apiKey)
         	.build();
-        String json = rest.execute(request);
+        String json = rest.execute(request).asString();
         if (json != null && json != "") {
         	QueryResult result = gson.fromJson(json, QueryResult.class);
         	result.setGson(gson);
@@ -739,6 +752,150 @@ public class PrecogClient {
         } else {
         	return null;
         }
+    }
+    
+    /**
+     * Downloads the results of a query to a file. This will block until the
+     * query has completed and results are ready. If {@code file} already exists
+     * on the file system, then an {@code IOException} will be thrown.
+     * 
+     * This will stream the results to the file, so it is suitable for working
+     * with very large result sets.
+     * 
+     * If the query has any errors (or server errors), then {@code false} will
+     * be returned. Otherwise, the query results will be downloaded to the File
+     * {@code file} and {@code true} will be returned.
+     * 
+     * @param query the async query to download the results from
+     * @param file the file to store the results in
+     * @throws IOException if the file already exists or there is an error writing to file
+     * @throws HttpException if there are any network problems or the server returns an unexpected result
+     */
+    public boolean downloadQueryResults(Query query, File file) throws IOException, HttpException {
+    	Path path = Paths.ANALYTICS.append("queries/").append(query.getJobId());
+        Request request = new RequestBuilder(path)
+        	.addParam("apiKey", apiKey)
+        	.build();
+        
+        Response response = rest.execute(request);
+        try {
+	        while (response.getStatusCode() == 202) {
+	        	try {
+	        		Thread.sleep(100);
+	        		response.getData().close();
+	        		response = rest.execute(request);
+	        	} catch (InterruptedException ex) {
+	        		Thread.currentThread().interrupt();
+	        		logger.warning("Thread interrupted, cancelling download of query results.");
+	        		return false;
+	        	}
+	        }
+	        
+	        if (response.getStatusCode() != 200) {
+	        	throw HttpException.unexpectedResponse(response);
+	        }
+	    	
+	    	FileWriter writer0 = new FileWriter(file);
+	    	try {
+		    	JsonWriter writer = new JsonWriter(writer0);
+		    	
+		    	writer.beginArray();
+		    	
+		    	Reader reader0 = new BufferedReader(new InputStreamReader(response.getData()));
+		    	JsonReader reader = new JsonReader(reader0);
+		    	reader.beginObject();
+		    	while (reader.hasNext()) {
+		    		String key = reader.nextName();
+		    		if (key.equals("data")) {
+		    			reader.beginArray();
+		    			while (reader.peek() != JsonToken.END_ARRAY) {
+		    				writeValue(writer, reader);
+		    			}
+		    			reader.endArray();
+		    			
+		    		} else if (key.equals("errors")) {
+		    			reader.beginArray();
+		    			if (reader.peek() != JsonToken.END_ARRAY) {
+		    				return false;
+		    			}
+		    			reader.endArray();
+		    			
+		    		} else if (key.equals("serverErrors")) {
+		    			reader.beginArray();
+		    			if (reader.peek() != JsonToken.END_ARRAY) {
+		    				return false;
+		    			}
+		    			reader.endArray();
+		    			
+		    		} else {
+		    			reader.skipValue();
+		    		}
+		    	}
+		    	reader.endObject();
+		    	
+		    	writer.endArray();
+		    	
+	    	} finally {
+	    		writer0.close();
+	    	}
+        } finally {
+        	response.getData().close();
+        }
+        
+        return true;
+    }
+    
+    // Pipes a single JSON value from reader -> writer.
+    private static void writeValue(JsonWriter writer, JsonReader reader) throws IOException {
+    	switch(reader.peek()) {
+    		case BEGIN_ARRAY:
+    			reader.beginArray();
+    			writer.beginArray();
+    			while (reader.peek() != JsonToken.END_ARRAY) {
+    				writeValue(writer, reader);
+    			}
+    			writer.endArray();
+    			reader.endArray();
+    			break;
+    			
+    		case BEGIN_OBJECT:
+    			reader.beginObject();
+    			writer.beginObject();
+    			while (reader.peek() != JsonToken.END_OBJECT) {
+    				writer.name(reader.nextName());
+    				writeValue(writer, reader);
+    			}
+    			writer.endObject();
+    			reader.endObject();
+    			break;
+    			
+
+    		case NULL:
+    			reader.nextNull();
+    			writer.nullValue();
+    			break;
+    			
+    		case BOOLEAN:
+    			writer.value(reader.nextBoolean());
+    			break;
+    			
+    		case NUMBER:
+    			try {
+    				long value = reader.nextLong();
+    				writer.value(value);
+    			} catch (NumberFormatException nfe) {
+    				double value = reader.nextDouble();
+    				writer.value(value);
+    			}
+    			break;
+    			
+    		case STRING:
+    			writer.value(reader.nextString());
+    			break;
+    			
+    		default:
+    			throw new IllegalStateException("Unexpected JSON token found: " + reader.peek());
+    	}
     }
     
     private static class JsonIterator<T> implements Iterator<String> {

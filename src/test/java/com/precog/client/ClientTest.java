@@ -2,10 +2,11 @@ package com.precog.client;
 
 import com.google.gson.Gson;
 import com.google.gson.annotations.SerializedName;
+import com.google.gson.reflect.TypeToken;
 
 import com.precog.client.AccountInfo;
-import com.precog.client.CsvFormat;
-import com.precog.client.IngestResult;
+import com.precog.client.DelimitedFormat;
+import com.precog.client.AppendResult;
 import com.precog.client.JsonFormat;
 import com.precog.client.PrecogClient;
 import com.precog.client.QueryResult;
@@ -23,6 +24,8 @@ import org.junit.Test;
 
 import javax.xml.bind.DatatypeConverter;
 
+import java.io.File;
+import java.io.FileReader;
 import java.io.IOException;
 import java.io.UnsupportedEncodingException;
 import java.net.URL;
@@ -56,24 +59,6 @@ public class ClientTest {
     public static String testApiKey;
     public static PrecogClient client;
     public static Gson gson = new Gson();
-
-    private static class TestData {
-        @SuppressWarnings("unused")
-		public final int testInt;
-        
-        @SuppressWarnings("unused")
-		public final String testStr;
-        
-        @SerializedName("~raw")
-        public final RawJson testRaw;
-
-
-        public TestData(int testInt, String testStr, RawJson testRaw) {
-            this.testInt = testInt;
-            this.testStr = testStr;
-            this.testRaw = testRaw;
-        }
-    }
 
     @BeforeClass
     public static void beforeAll() throws Exception {
@@ -124,7 +109,7 @@ public class ClientTest {
     	Path path = generatePath();
         RawJson testJson = new RawJson("{\"test\":[{\"v\": 1}, {\"v\": 2}]}");
         TestData testData = new TestData(42, "Hello\" World", testJson);
-        IngestResult result = client.append(path.toString(), testData);
+        AppendResult result = client.append(path.toString(), testData);
         assertEquals(1, result.getIngested());
         expectCount(path, 1);
     }
@@ -134,7 +119,7 @@ public class ClientTest {
         ToJson<String> toJson = new RawStringToJson();
         Path path = generatePath();
         String data = "{\"test\":[{\"v\": 1}, {\"v\": 2}]}";
-        IngestResult result = client.append(path.toString(), data, toJson);
+        AppendResult result = client.append(path.toString(), data, toJson);
         assertEquals(1, result.getIngested());
         expectCount(path, 1);
         QueryResult qresult = client.query("count(//" + path.relativize() + ")");
@@ -145,7 +130,7 @@ public class ClientTest {
     public void testAppendAllFromStringWithJsonStream() throws IOException, HttpException {
     	Path path = generatePath();
         String rawJson = "{\"test\":[{\"v\": 1}, {\"v\": 2}]} {\"test\":[{\"v\": 2}, {\"v\": 3}]}";
-        IngestResult result = client.appendAllFromString(path.toString(), rawJson, JsonFormat.JSON_STREAM);
+        AppendResult result = client.appendAllFromString(path.toString(), rawJson, Formats.JSON_STREAM);
         assertEquals(2, result.getIngested());
         expectCount(path, 2);
     }
@@ -154,7 +139,7 @@ public class ClientTest {
     public void testAppendAllFromStringWithJsonArray() throws IOException, HttpException {
     	Path path = generatePath();
         String rawJson = "[{\"test\":[{\"v\": 1}, {\"v\": 2}]},{\"test\":[{\"v\": 2}, {\"v\": 3}]}]";
-        IngestResult result = client.appendAllFromString(path.toString(), rawJson, JsonFormat.JSON);
+        AppendResult result = client.appendAllFromString(path.toString(), rawJson, Formats.JSON);
         assertEquals(2, result.getIngested());
         expectCount(path, 2);
     }
@@ -163,7 +148,7 @@ public class ClientTest {
     public void testAppendAllFromStringWithCSV() throws IOException, HttpException {
     	Path path = generatePath();
     	String csv = "a,b,c\n1,2,3\n\n,,tom\n\n";
-        IngestResult result = client.appendAllFromString(path.toString(), csv, CsvFormat.CSV);
+        AppendResult result = client.appendAllFromString(path.toString(), csv, Formats.CSV);
         assertEquals(4, result.getIngested());
         expectCount(path, 4);
     }
@@ -172,7 +157,7 @@ public class ClientTest {
     public void testAppendRawUTF8() throws IOException, HttpException {
     	Path path = generatePath();
         String rawJson = "{\"test\":[{\"������������������������������\": 1}, {\"v\": 2}]}";
-        client.appendAllFromString(path.toString(), rawJson, JsonFormat.JSON_STREAM);
+        client.appendAllFromString(path.toString(), rawJson, Formats.JSON_STREAM);
         expectCount(path, 1);
     }
 
@@ -201,7 +186,7 @@ public class ClientTest {
     	ts.add(new TestData(1, "asdf", new RawJson("asdf")));
     	ts.add(new TestData(2, "qwerty", new RawJson("[1,2,3]")));
     	ts.add(new TestData(3, "zxcv", new RawJson("1111")));
-    	IngestResult result = client.appendAll(path.toString(), ts);
+    	AppendResult result = client.appendAll(path.toString(), ts);
     	assertEquals(3, result.getIngested());
     	expectCount(path, 3);
     }
@@ -210,7 +195,7 @@ public class ClientTest {
     public void testDelete() throws IOException, HttpException {
     	Path path = generatePath();
     	TestData data = new TestData(1, "abc", new RawJson("[1,2,3]"));
-    	IngestResult result = client.append(path.toString(), data);
+    	AppendResult result = client.append(path.toString(), data);
     	assertEquals(1, result.getIngested());
     	expectCount(path, 1);
     	client.delete(path.toString());
@@ -294,6 +279,24 @@ public class ClientTest {
     	assertEquals(3.0, max, 0.0);
     }
 
+    @Test
+    public void testDownloadQueryResults() throws IOException, HttpException {
+    	Path path = generatePath();
+    	List<TestData> data = Arrays.asList(
+    			new TestData(1, "", null),
+    			new TestData(2, "", null),
+    			new TestData(3, "", null));
+    	client.appendAll(path.toString(), data);
+    	expectCount(path, 3);
+    	Query query = client.queryAsync("//" + path.relativize());
+    	File file = File.createTempFile("precog-client-test-", ".json");
+    	assertTrue(client.downloadQueryResults(query, file));
+    	FileReader reader = new FileReader(file);
+    	List<TestData> data0 = gson.fromJson(reader,
+    			(new TypeToken<List<TestData>>() { }).getType());
+    	assertEquals(data, data0);
+    }
+    
     @Test
     public void testFromHeroku() throws UnsupportedEncodingException {
         String user = "user";

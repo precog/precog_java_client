@@ -18,4 +18,9 @@ public class HttpException extends Exception {
 	public HttpException(Throwable cause) {
 		super(cause);
 	}
+	
+	public static HttpException unexpectedResponse(Response response) {
+		return new HttpException("Unexpected response from server: " +
+				response.getStatusCode() + " " + response.getMessage());
+	}
 }

@@ -4,8 +4,9 @@ package com.precog.client;
  * Result of data ingestion.
  *
  * @author Gabriel Claramunt <gabriel@precog.com>
+ * @author Tom Switzer
  */
-public class IngestResult {
+public class AppendResult {
 
 	private String ingestId;
     private int total;

@@ -61,7 +61,7 @@ public class Rest {
         headers.put("Authorization", "Basic " + printBase64Binary((user + ":" + password).getBytes()));
     }
     
-    public static String execute(URL service, Request request) throws IOException, HttpException {
+    public static Response execute(URL service, Request request) throws HttpException {
     	return new Rest(service).execute(request);
     }
 
@@ -75,76 +75,61 @@ public class Rest {
      * @throws IOException
      * @throws IllegalArgumentException if HTTPS is required, but the end-point is HTTP.
      */
-    public String execute(Request request) throws IOException, HttpException {
+    public Response execute(Request request) throws HttpException {
     	if (request.isHttpsRequired() && !isSecure()) {
     		throw new IllegalArgumentException(
     				"Request required HTTPS connection for HTTP end-point.");
     	}
     	
-    	StringBuilder params = new StringBuilder();
-        char join = '?';
-        for (Map.Entry<String, String> param : request.getParams().entrySet()) {
-        	params.append(join).append(encodeParam(param.getKey(), param.getValue()));
-        	join = '&';
-        }
-        
-        String path = request.getPath().absolutize().toString();
-        URL serviceURL = new URL(service, path + params.toString());
-        HttpURLConnection conn = (HttpURLConnection) serviceURL.openConnection();
-
-        conn.setRequestMethod(request.getMethod().getValue());
-
-        for (Map.Entry<String, String> e : request.getHeaders().entrySet()) {
-            conn.setRequestProperty(e.getKey(), e.getValue());
-        }
-        conn.setRequestProperty("Content-Type", request.getContentType().getType());
-
-        if (request.getContentLength() != 0) {
-        	InputStream in = request.getBody();
-        	try {
-        		long length = request.getContentLength();
-        		if (length < 0) {
-        			conn.setChunkedStreamingMode(CHUNK_SIZE);
-        		} else {
-        			conn.setRequestProperty("Content-Length", "" + length);
-        			conn.setFixedLengthStreamingMode(length);
-        		}
-	        	
-	            conn.setDoOutput(true);
-	            OutputStream out = conn.getOutputStream();
-	            try {
-	            	byte[] chunk = new byte[CHUNK_SIZE];
-	            	int chunkSize = 0;
-	            	while ((chunkSize = in.read(chunk)) >= 0) {
-	            		out.write(chunk, 0, chunkSize);
-	            	}
-	            } finally {
-	            	out.close();
-	            }
-        	} finally {
-        		in.close();
-        	}
-        }
-
-        if (conn.getResponseCode() != HttpURLConnection.HTTP_OK &&
-        		conn.getResponseCode() != HttpURLConnection.HTTP_ACCEPTED) {
-        	throw new HttpException("Unexpected response from server: " +
-        		conn.getResponseCode() + ": " + conn.getResponseMessage() +
-        		" ; service url " + serviceURL);
-        }
-        
-        StringBuilder sb = new StringBuilder();
-        InputStream in = conn.getInputStream();
-        try {
-        	BufferedReader buff = new BufferedReader(new InputStreamReader(in, "UTF-8"));
-        	String inputLine;
-            while ((inputLine = buff.readLine()) != null) {
-                sb.append(inputLine);
-            }
-        } finally {
-            in.close();
-        }
-        
-        return sb.toString();
+    	try {
+	    	StringBuilder params = new StringBuilder();
+	        char join = '?';
+	        for (Map.Entry<String, String> param : request.getParams().entrySet()) {
+	        	params.append(join).append(encodeParam(param.getKey(), param.getValue()));
+	        	join = '&';
+	        }
+	        
+	        String path = request.getPath().absolutize().toString();
+	        URL serviceURL = new URL(service, path + params.toString());
+	        HttpURLConnection conn = (HttpURLConnection) serviceURL.openConnection();
+	
+	        conn.setRequestMethod(request.getMethod().getValue());
+	
+	        for (Map.Entry<String, String> e : request.getHeaders().entrySet()) {
+	            conn.setRequestProperty(e.getKey(), e.getValue());
+	        }
+	        conn.setRequestProperty("Content-Type", request.getContentType().getType());
+	
+	        if (request.getContentLength() != 0) {
+	        	InputStream in = request.getBody();
+	        	try {
+	        		long length = request.getContentLength();
+	        		if (length < 0) {
+	        			conn.setChunkedStreamingMode(CHUNK_SIZE);
+	        		} else {
+	        			conn.setRequestProperty("Content-Length", "" + length);
+	        			conn.setFixedLengthStreamingMode(length);
+	        		}
+		        	
+		            conn.setDoOutput(true);
+		            OutputStream out = conn.getOutputStream();
+		            try {
+		            	byte[] chunk = new byte[CHUNK_SIZE];
+		            	int chunkSize = 0;
+		            	while ((chunkSize = in.read(chunk)) >= 0) {
+		            		out.write(chunk, 0, chunkSize);
+		            	}
+		            } finally {
+		            	out.close();
+		            }
+	        	} finally {
+	        		in.close();
+	        	}
+	        }
+	        
+	        return new Response(conn);
+    	} catch (IOException ioe) {
+    		throw new HttpException(ioe);
+    	}
     }
 }
