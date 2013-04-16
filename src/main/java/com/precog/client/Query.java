@@ -1,11 +1,13 @@
 package com.precog.client;
 
 /**
- * This represents an asynchronous query. It wraps a job ID and can be used to
- * poll Precog to see if the query has completed.
+ * A representation of a running, asynchronous query. It wraps a job ID and
+ * can be used to poll Precog to see if the query has completed, retrieve those
+ * results or store them in a file on disk.
  * 
  * @see PrecogClient#queryAsync(String, String)
  * @see PrecogClient#queryResults(Query)
+ * @see PrecogClient#downloadQueryResults(Query, java.io.File)
  * 
  * @author Tom Switzer <switzer@precog.com>
  */
@@ -21,9 +23,5 @@ public class Query {
 	 */
 	public String getJobId() {
 		return jobId;
-	}
-
-	public void setJobId(String jobId) {
-		this.jobId = jobId;
 	}
 }

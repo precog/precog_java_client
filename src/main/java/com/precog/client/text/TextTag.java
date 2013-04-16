@@ -1,6 +1,8 @@
-package com.precog.client;
+package com.precog.client.text;
 
 import java.util.Date;
+
+import com.precog.client.QueryResult;
 
 /**
  * A timestamped message attached to a particular position in a piece of text.
@@ -9,15 +11,15 @@ import java.util.Date;
  *
  * @author Tom Switzer <switzer@precog.com>
  */
-public class MessageReport {
+public class TextTag {
 	
 	private String message;
 	private Date timestamp;
 	private Position position;
 	
-	public MessageReport() { }
+	public TextTag() { }
 	
-	public MessageReport(String message, Date timestamp, Position position) {
+	public TextTag(String message, Date timestamp, Position position) {
 		super();
 		this.message = message;
 		this.timestamp = timestamp;
@@ -68,7 +70,7 @@ public class MessageReport {
 			return false;
 		if (getClass() != obj.getClass())
 			return false;
-		MessageReport other = (MessageReport) obj;
+		TextTag other = (TextTag) obj;
 		if (message == null) {
 			if (other.message != null)
 				return false;

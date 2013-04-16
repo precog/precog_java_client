@@ -1,7 +1,9 @@
 package com.precog.client;
 
 /**
- * User Account Plan.
+ * User account plan. This defines the type of plan a user is currently
+ * subscribed to. For instance, if you signed up for a beta account, then your
+ * AccountPlan would like be {@link #FREE}.
  *
  * @author Tom Switzer <switzer@precog.com>
  */
@@ -15,6 +17,9 @@ public class AccountPlan {
         this.setType(type);
     }
 
+    /**
+     * Returns the plan type (eg. "Free").
+     */
 	public String getType() {
 		return type;
 	}

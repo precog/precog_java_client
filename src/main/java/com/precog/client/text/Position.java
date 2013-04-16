@@ -1,4 +1,6 @@
-package com.precog.client;
+package com.precog.client.text;
+
+import com.precog.client.QueryResult;
 
 /**
  * A position in a piece of text.

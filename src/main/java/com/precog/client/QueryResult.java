@@ -5,9 +5,10 @@ import java.util.Iterator;
 import java.util.List;
 
 import com.google.gson.Gson;
+import com.precog.client.text.TextTag;
 
 /**
- * Result of running a query.
+ * Result of the execution of a query (result set, errors, warnings, etc).
  * 
  * If {@link #failed()} is {@code true}, then you should assume that the data
  * is invalid (though the partial result may still be of interest to you). A
@@ -20,15 +21,15 @@ public class QueryResult implements Iterable<String> {
 
 	private Gson gson;
     private List<String> data;
-    private List<MessageReport> errors = Collections.emptyList();
-    private List<MessageReport> warnings = Collections.emptyList();
+    private List<TextTag> errors = Collections.emptyList();
+    private List<TextTag> warnings = Collections.emptyList();
     private List<String> serverErrors = Collections.emptyList();
     
     QueryResult() {
     }
     
-	QueryResult(Gson gson, List<String> data, List<MessageReport> errors,
-			List<MessageReport> warnings, List<String> serverErrors) {
+	QueryResult(Gson gson, List<String> data, List<TextTag> errors,
+			List<TextTag> warnings, List<String> serverErrors) {
 		this.data = data;
 		this.errors = errors;
 		this.warnings = warnings;
@@ -61,7 +62,7 @@ public class QueryResult implements Iterable<String> {
      * Returns the list of errors found in the query. If there are no errors,
      * then an empty list is returned.
      */
-	public List<MessageReport> getErrors() {
+	public List<TextTag> getErrors() {
 		return errors;
 	}
 
@@ -69,7 +70,7 @@ public class QueryResult implements Iterable<String> {
 	 * Returns the list of warnings for the query. If there are no warnings,
 	 * then an empty list is returned.
 	 */
-	public List<MessageReport> getWarnings() {
+	public List<TextTag> getWarnings() {
 		return warnings;
 	}
 

@@ -29,7 +29,9 @@ import java.util.logging.Logger;
 import javax.xml.bind.DatatypeConverter;
 
 /**
- * A simple REST client for Precog. This provides methods to upload files to
+ * A simple REST client for storing data in Precog and querying it with Quirrel.
+ * <p>
+ * This provides methods to upload files to
  * your virtual file system (in Precog), append records/events to the VFS,
  * delete data, and run Quirrel queries on your data. Additionally, you can
  * also create new accounts and get the account details for existing accounts.

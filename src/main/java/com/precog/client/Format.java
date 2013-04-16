@@ -12,7 +12,7 @@ import com.precog.client.rest.ContentType;
 public interface Format {
 	
 	/** Returns the mime-type of this format's data. */
-	public abstract ContentType getContentType();
+	public ContentType getContentType();
 	
-	public abstract <A> A accept(FormatVisitor<A> visitor);
+	public <A> A accept(FormatVisitor<A> visitor);
 }

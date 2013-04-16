@@ -31,7 +31,4 @@ public class Formats {
 	 * escape values.
 	 */
 	public final static DelimitedFormat SSV = new DelimitedFormat(';');
-	
-	
-
 }

@@ -1,7 +1,7 @@
 package com.precog.client;
 
 /**
- * Result of data ingestion.
+ * The result of appending data to Precog (success status, errors, etc.).
  *
  * @author Gabriel Claramunt <gabriel@precog.com>
  * @author Tom Switzer

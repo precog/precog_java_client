@@ -3,10 +3,9 @@ package com.precog.client;
 import com.precog.client.rest.ContentType;
 
 /**
- * A CSV format represents CSV files as values separated by a delimiter
- * ({link #getDelimiter()}), a quotation character ({@link #getQuote()})
- * used to quote values, and a character to escape quotes within a quoted
- * value.
+ * A CSV format represents CSV files as values separated by a delimiter, a
+ * quotation character used to quote values, and a character to escape quotes
+ * within a quoted value.
  * 
  * The most common formats are available as static members on {@link Formats}:
  * {@link Formats#CSV}, {@link Formats#TSV}, and {@link Formats#SSV}.

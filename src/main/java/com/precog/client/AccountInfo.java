@@ -1,7 +1,9 @@
 package com.precog.client;
 
 /**
- * User Account details.
+ * User account details (email, account ID, API key, root path, etc.).
+ * 
+ * This holds most of the important information of a user account.
  *
  * @author Gabriel Claramunt <gabriel@precog.com>
  * @author Tom Switzer <switzer@precog.com>

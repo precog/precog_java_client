@@ -1,6 +1,6 @@
 /**
- * A Java client for working with Precog. This main class in this package is
- * {@link com.precog.client.PrecogClient}, which provides a convenient way to:
+ * Contains {@link com.precog.client.PrecogClient}, simple Java client for
+ * working with Precog. PrecogClient provides a simple way to:
  * <p>
  * <ul>
  *  <li>Append records/events to a path in Precog
@@ -12,7 +12,7 @@
  * to insert and query data in Precog.
  * <p>
  * <pre>
- * {@code
+ * <code>
  * 
  * import com.precog.client.*
  * 
@@ -29,7 +29,7 @@
  * 
  *     public static void main(String[] args) {
  *     
- *         // Create a new account. You would probably use an existing account.
+ * 	       //Create a new account. You would probably use an existing account.
  *         
  *         AccountInfo account = PrecogClient.createAccount("bob@example.com", "password");
  *         
@@ -88,8 +88,7 @@
  *         System.out.println("Mean age: " + result.get(0, Double.class));
  *     }
  * }
- * 
- * }
+ * </code>
  * </pre>
  */
 package com.precog.client;
