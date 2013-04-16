@@ -5,7 +5,7 @@ package com.precog.client;
  * poll Precog to see if the query has completed.
  * 
  * @see PrecogClient#queryAsync(String, String)
- * @see PrecogClient#queryResults(String)
+ * @see PrecogClient#queryResults(Query)
  * 
  * @author Tom Switzer <switzer@precog.com>
  */

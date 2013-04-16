@@ -66,13 +66,12 @@ public class Rest {
     }
 
     /**
-     * Sends a http request and parses the result.
+     * Executes a REST {@link Request} against this HTTP end-point and returns
+     * the {@link Response}.
      *
-     * @param method  request HTTP method ( GET, POST, DELETE,...)
-     * @param path    full path for the request (i.e. /$service/v$version/$action )
-     * @param request request configuration
-     * @return Server response as string
-     * @throws IOException
+     * @param request the REST request
+     * @return the server's response
+     * @throws HttpException if a network error occurs while executing the REST request
      * @throws IllegalArgumentException if HTTPS is required, but the end-point is HTTP.
      */
     public Response execute(Request request) throws HttpException {

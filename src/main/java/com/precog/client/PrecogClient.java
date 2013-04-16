@@ -93,11 +93,6 @@ public class PrecogClient {
 
     /**
      * Builds a new client to connect to precog services.
-     * <p>
-     * If a {@code gson} is not null, then the provided {@code Gson} object
-     * will be used by {@link store(Path,Object)} to serialize the object to
-     * JSON. If {@code gson} is null, then a default {@code Gson} object is
-     * used instead.
      * 
      * @param service Precog end-point to use
      * @param apiKey API key used to authenticate with Precog
@@ -128,7 +123,7 @@ public class PrecogClient {
 
     /**
      * Builds a new client to connect to precog services. This will use the
-     * {@code accountId} as the base path {@link getBasePath()} for all queries.
+     * {@code accountId} as the base path {@link #getBasePath()} for all queries.
      * If this is not desired, you must construct the {@link PrecogClient} with
      * a base path explicitly.
      * <p>
@@ -177,7 +172,7 @@ public class PrecogClient {
      * and provide the specific Service instance for the storage server URL provided
      * with your integration instructions.
      * <p>
-     * This uses the {@link BETA_HTTPS} (beta.precog.com) service by default.
+     * This uses the {@link PrecogClient#BETA_HTTPS} (beta.precog.com) service by default.
      *
      * @param apiKey The string token that permits storage of records at or below the
      *               virtual filesystem path to be used
@@ -213,13 +208,13 @@ public class PrecogClient {
      * <p>
      * This constructor uses the Precog beta end-point (beta.precog.com). If
      * you wish to use a different end point, use
-     * {@link PrecogClient(URL, String, String, String)}.
+     * {@link #PrecogClient(URL, String, String, String)}.
      *
      * @param apiKey  api key to use
      * @param accountId the account to use as the data owner
      * @param basePath The base path to use for all requests
-     * @see PrecogClient(URL, String, String, String)
-     * @see BETA_HTTPS
+     * @see #PrecogClient(URL, String, String, String)
+     * @see PrecogClient#BETA_HTTPS
      */
     public PrecogClient(String apiKey, String accountId, String basePath) {
     	this(BETA_HTTPS, apiKey, accountId, basePath, null);
@@ -227,19 +222,18 @@ public class PrecogClient {
 
     /**
      * Builds a new client to connect to precog services. This will use the
-     * {@code accountId} as the base path {@link getBasePath()} for all queries.
+     * {@code accountId} as the base path {@link #getBasePath()} for all queries.
      * If this is not desired, you must construct the {@link PrecogClient} with
      * a base path explicitly.
      * <p>
      * This constructor uses the Precog beta end-point (beta.precog.com). If
      * you wish to use a different end point, use
-     * {@link PrecogClient(URL, String, String)}.
+     * {@link #PrecogClient(URL, String, String)}.
      *
-     * @param service service to connect
      * @param apiKey  api key to use
      * @param accountId the account to use as the data owner
-     * @see PrecogClient(URL, String, String)
-     * @see BETA_HTTPS
+     * @see #PrecogClient(URL, String, String)
+     * @see PrecogClient#BETA_HTTPS
      */
     public PrecogClient(String apiKey, String accountId) {
     	this(BETA_HTTPS, apiKey, accountId, null, null);
@@ -256,12 +250,11 @@ public class PrecogClient {
      * <p>
      * This constructor uses the Precog beta end-point (beta.precog.com). If
      * you wish to use a different end point, use
-     * {@link PrecogClient(URL, String)}.
+     * {@link #PrecogClient(URL, String)}.
      *
-     * @param service service to connect
      * @param apiKey  api key to use
-     * @see PrecogClient(URL, String)
-     * @see BETA_HTTPS
+     * @see #PrecogClient(URL, String)
+     * @see PrecogClient#BETA_HTTPS
      */
     public PrecogClient(String apiKey) {
     	this(BETA_HTTPS, apiKey, null, null, null);
@@ -274,11 +267,11 @@ public class PrecogClient {
      * <p>
      * This constructor uses the Precog beta end-point (beta.precog.com). If
      * you wish to use a different end point, use
-     * {@link PrecogClient(URL, AccountInfo)}.
+     * {@link #PrecogClient(URL, AccountInfo)}.
      *
      * @param account the account to base this client off of
-     * @see PrecogClient(URL, AccountInfo)
-     * @see BETA_HTTPS
+     * @see #PrecogClient(URL, AccountInfo)
+     * @see PrecogClient#BETA_HTTPS
      */
     public PrecogClient(AccountInfo account) {
     	this(account.getApiKey(), account.getAccountId(), account.getRootPath());
@@ -353,8 +346,8 @@ public class PrecogClient {
     /**
      * Creates a new account ID, accessible by the specified email address and
      * password, or returns the existing account ID. This just calls
-     * {@link createAccount(Service,String,String)} with a default service of
-     * {@link BETA_HTTPS}.
+     * {@link #createAccount(URL,String,String)} with a default service of
+     * {@link PrecogClient#BETA_HTTPS}.
      *
      * @param email    user's email
      * @param password user's password
@@ -399,8 +392,8 @@ public class PrecogClient {
      * Retrieves the details about a particular account. This call is the
      * primary mechanism by which you can retrieve your master API key.
      * This is equivalent to calling
-     * {@link describeAccount(Service,String,String,String)} with a default
-     * service of {@link BETA_HTTPS}.
+     * {@link #describeAccount(URL,String,String,String)} with a default
+     * service of {@link PrecogClient#BETA_HTTPS}.
      *
      * @param email     user's email
      * @param password  user's password
@@ -476,7 +469,7 @@ public class PrecogClient {
      * large {@code InputStream}s.
      * 
      * @param path the path in Precog to ingest the data into
-     * @param file the data file to ingest
+     * @param in the data as an InputStream to ingest
      * @param format the format of the data
      * @return the results of the ingest
      * @throws IOException if there is a problem with the network
@@ -522,8 +515,8 @@ public class PrecogClient {
      * Gson using reflection. If a {@code Gson} object was provided during
      * construction, then it will be used, otherwise the default Gson
      * serialization will be used.
-     * 
-     * @note Calling this method guarantees the object is stored in the Precog
+     * <p>
+     * Note: Calling this method guarantees the object is stored in the Precog
      *       transaction log.
      * 
      * @param path The path in the virtual file system to store the record
@@ -553,8 +546,8 @@ public class PrecogClient {
     /**
      * Store the object {@code obj} as a record in Precog. It is serialized by
      * using {@link ToJson#serialize(Object)} on {@code toJson}.
-     * 
-     * @note Calling this method guarantees the object is stored in the Precog
+     * <p>
+     * Note: Calling this method guarantees the object is stored in the Precog
      *       transaction log.
      * 
      * @param path The path in the virtual file system to store the record
@@ -585,7 +578,7 @@ public class PrecogClient {
     /**
      * Uploads the records in {@code file} to {@code path}. This is equivalent
      * to first <b>deleting the data</b> at the VFS path {@code path}, then
-     * calling {@link appendAllFromFile(String,File,Format)}.
+     * calling {@link #appendAllFromFile(String,File,Format)}.
      * 
      * @param path the path in Precog to upload the data to
      * @param file the data file to upload
@@ -680,7 +673,7 @@ public class PrecogClient {
      * This does <b>NOT</b> run the query in a new thread. It will still block
      * the current thread until the server responds.
      * <p>
-     * An example of using {@link queryAsync(String)} to poll for results
+     * An example of using {@link #queryAsync(String)} to poll for results
      * could look like:
      * <p>
      * <pre>
@@ -700,7 +693,7 @@ public class PrecogClient {
      * 
      * @param path the base path to use in the query
      * @param q the query to execute
-     * @return a Job ID that can be used with {@link queryResults(String)}
+     * @return a Job ID that can be used with {@link #queryResults(Query)}
      * @throws IOException if there is a problem with the network
      * @throws HttpException if the server sends an unexpected response
      */
@@ -732,7 +725,7 @@ public class PrecogClient {
      * has completed, then a {@link QueryResult} object is returned. Otherwise,
      * {@code null} is returned.
      * 
-     * @param jobId the job ID of the query, as returned by {@code queryAsync(String,String)}
+     * @param query the query, as returned by {@link #queryAsync(String,String)}
      * @return the results if the query completed, {@code null} otherwise
      * @throws IOException if there is a problem with the network
      * @throws HttpException if the server sends an unexpected response

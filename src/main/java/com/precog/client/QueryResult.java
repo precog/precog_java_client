@@ -9,10 +9,10 @@ import com.google.gson.Gson;
 /**
  * Result of running a query.
  * 
- * If {@link failed()} is {@code true}, then you should assume that the data
+ * If {@link #failed()} is {@code true}, then you should assume that the data
  * is invalid (though the partial result may still be of interest to you). A
- * result has failed if either {@link getErrors()} is non-empty or
- * {@link getServerErrors()} is non-empty.
+ * result has failed if either {@link #getErrors()} is non-empty or
+ * {@link #getServerErrors()} is non-empty.
  *
  * @author Tom Switzer <switzer@precog.com>
  */
@@ -38,8 +38,8 @@ public class QueryResult implements Iterable<String> {
 	/**
 	 * Returns {@code true} if the query did not execute successfully. This
 	 * means that either there was an error with query itself (so
-	 * {@link getErrors()} is non-empty), or there was a server error while
-	 * executing the query (so {@link getServerErrors()} is non-empty).
+	 * {@link #getErrors()} is non-empty), or there was a server error while
+	 * executing the query (so {@link #getServerErrors()} is non-empty).
 	 */
     public boolean failed() {
       return errors.size() > 0 || serverErrors.size() > 0;

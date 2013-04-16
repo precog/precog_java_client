@@ -22,7 +22,7 @@ public class Formats {
 	 */
 	public final static DelimitedFormat TSV = new DelimitedFormat('\t');
 	
-	/** An alias for {@link TSV}. */
+	/** An alias for {@link Formats#TSV}. */
 	public final static DelimitedFormat TAB = new DelimitedFormat('\t');
 	
 	/**

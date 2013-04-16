@@ -1,6 +1,6 @@
 /**
  * A Java client for working with Precog. This main class in this package is
- * {@link PrecogClient}, which provides a convenient way to:
+ * {@link com.precog.client.PrecogClient}, which provides a convenient way to:
  * <p>
  * <ul>
  *  <li>Append records/events to a path in Precog
@@ -8,8 +8,8 @@
  *  <li>Run quirrel queries against your data
  * </ul>
  * <p>
- * Here is a short example, demonstrating the use of {@link PrecogClient} to
- * insert and query data in Precog.
+ * Here is a short example, demonstrating the use of {@link com.precog.client.PrecogClient}
+ * to insert and query data in Precog.
  * <p>
  * <pre>
  * {@code

@@ -4,10 +4,10 @@ import com.precog.client.rest.ContentType;
 
 /**
  * This class represents JSON formatted data. There are 2 instances,
- * {@link JSON} and {@code JSON_STREAM} to match the 2 formats supported by
+ * {@link #JSON} and {@link #JSON_STREAM} to match the 2 formats supported by
  * Precog.
  * 
- * The first, {@link JSON}, expects data to be either single JSON object, or a
+ * The first, {@link #JSON}, expects data to be either single JSON object, or a
  * JSON array of multiple objects, where each element in the array represents
  * an event/record in Precog. For example:
  * 
@@ -19,7 +19,7 @@ import com.precog.client.rest.ContentType;
  * }
  * </pre>
  * 
- * The second, {@link JSON_STREAM}, is a stream of valid JSON values, each
+ * The second, {@link #JSON_STREAM}, is a stream of valid JSON values, each
  * separated by whitespace. Each value is valid JSON, but the values are simply
  * concatenated with newlines (or spaces or tabs). For example:
  * 

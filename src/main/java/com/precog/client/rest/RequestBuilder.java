@@ -66,7 +66,7 @@ public class RequestBuilder {
      * current path. If it is absolute, then it will replace the path.
      * 
      * @param path the request path
-     * @return
+     * @return this request builder
      */
     public RequestBuilder setPath(Path path) {
     	if (path.isRelative()) {
@@ -162,7 +162,7 @@ public class RequestBuilder {
     /**
      * Set the body of the request to use the contents of {@code file}.
      * 
-     * @param file the file to use as the body of the request
+     * @param body the InputStream to use as the body of the request
      * @return this request builder
      */
     public RequestBuilder setBody(InputStream body) {
@@ -184,7 +184,6 @@ public class RequestBuilder {
     /**
      * Adds base authentication to a header map
      *
-     * @param headers  map with header parameters
      * @param user     user id
      * @param password user password
      */
