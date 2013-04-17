@@ -24,9 +24,10 @@ public class Rest {
     private final URL service;
 
     /**
-     * Constructor  (only visible to the package)
+     * Creates a Rest instance that uses {@code service} as its end-point for
+     * all requests.
      *
-     * @param service service to connect
+     * @param service the end-point to use for requests
      */
     public Rest(URL service) {
       this.service = service;
@@ -48,17 +49,6 @@ public class Rest {
      */
     private static String encodeParam(String key, String value) throws UnsupportedEncodingException {
         return key + "=" + encode(value, "UTF-8");
-    }
-
-    /**
-     * Adds base authentication to a header map
-     *
-     * @param headers  map with header parameters
-     * @param user     user id
-     * @param password user password
-     */
-    public static void addBaseAuth(Map<String, String> headers, String user, String password) {
-        headers.put("Authorization", "Basic " + printBase64Binary((user + ":" + password).getBytes()));
     }
     
     public static Response execute(URL service, Request request) throws HttpException {

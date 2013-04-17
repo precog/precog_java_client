@@ -329,7 +329,6 @@ public class PrecogClient {
      * @param email    user's email
      * @param password user's password
      * @return Json string with the account Id
-     * @throws IOException if there is a problem with the network
      * @throws HttpException if the server sends an unexpected response
      * @throws IllegalArgumentException if the service is not secure (HTTPS)
      */
@@ -354,7 +353,6 @@ public class PrecogClient {
      * @param email    user's email
      * @param password user's password
      * @return Json string with the account Id
-     * @throws IOException if there is a problem with the network
      * @throws HttpException if the server sends an unexpected response
      * @throws IllegalArgumentException if the service is not secure (HTTPS)
      */
@@ -374,7 +372,6 @@ public class PrecogClient {
      * @param password  user's password
      * @param accountId account's id number
      * @return account info
-     * @throws IOException if there is a problem with the network
      * @throws HttpException if the server sends an unexpected response
      * @throws IllegalArgumentException if the service is not secure (HTTPS)
      */
@@ -401,7 +398,6 @@ public class PrecogClient {
      * @param password  user's password
      * @param accountId account's id number
      * @return account info
-     * @throws IOException if there is a problem with the network
      * @throws HttpException if the server sends an unexpected response
      * @throws IllegalArgumentException if the service is not secure (HTTPS)
      */
@@ -423,7 +419,6 @@ public class PrecogClient {
      * @param contents the data to ingest
      * @param format the format of the data
      * @return the results of the ingest
-     * @throws IOException if there is a problem with the network
      * @throws HttpException if the server sends an unexpected response
      */
     public AppendResult appendAllFromString(String path, String contents, Format format)
@@ -452,7 +447,6 @@ public class PrecogClient {
      * @param file the data file to ingest
      * @param format the format of the data
      * @return the results of the ingest
-     * @throws IOException if there is a problem with the network
      * @throws HttpException if the server sends an unexpected response
      */
     public AppendResult appendAllFromFile(String path, File file, Format format)
@@ -474,7 +468,6 @@ public class PrecogClient {
      * @param in the data as an InputStream to ingest
      * @param format the format of the data
      * @return the results of the ingest
-     * @throws IOException if there is a problem with the network
      * @throws HttpException if the server sends an unexpected response
      */
     public AppendResult appendAllFromInputStream(String path, InputStream in, Format format)
@@ -523,7 +516,7 @@ public class PrecogClient {
      * 
      * @param path The path in the virtual file system to store the record
      * @param obj The object to serialize to JSON and store in the VFS
-     * @throws IOException
+     * @throws HttpException if there is a network error or unexpected results
      */
     public AppendResult append(String path, Object obj)
     		throws HttpException {
@@ -536,7 +529,6 @@ public class PrecogClient {
      * 
      * @param path the sub-path to store the records in
      * @param coll the collection of records to store
-     * @throws IOException if there is a problem with the network
      * @throws HttpException if the server sends an unexpected response
      */
     public <T> AppendResult appendAll(String path, Iterable<T> coll)
@@ -554,7 +546,6 @@ public class PrecogClient {
      * 
      * @param path The path in the virtual file system to store the record
      * @param obj The object to serialize to JSON and store in the VFS
-     * @throws IOException if there is a problem with the network
      * @throws HttpException if the server sends an unexpected response
      */
     public <T> AppendResult append(String path, T obj, ToJson<T> toJson)
@@ -568,7 +559,6 @@ public class PrecogClient {
      * 
      * @param path the sub-path to store the records in
      * @param coll the collection of records to store
-     * @throws IOException if there is a problem with the network
      * @throws HttpException if the server sends an unexpected response
      */
     public <T> AppendResult appendAll(String path, Iterable<T> coll, ToJson<T> toJson)
@@ -586,7 +576,6 @@ public class PrecogClient {
      * @param file the data file to upload
      * @param format the format of the file's contents
      * @return the results of the data ingest
-     * @throws IOException if there is a problem with the network
      * @throws HttpException if the server sends an unexpected response
      */
     public AppendResult uploadFile(String path, File file, Format format)
@@ -611,7 +600,6 @@ public class PrecogClient {
      * other data in sub-paths of {@code path} will remain in-tact.
      *
      * @param path the path to delete data from
-     * @throws IOException if there is a problem with the network
      * @throws HttpException if the server sends an unexpected response
      */
     public void delete(String path) throws HttpException {
@@ -635,7 +623,6 @@ public class PrecogClient {
      * @param path relative storage path to query
      * @param q    quirrel query to excecute
      * @return result as Json string
-     * @throws IOException if there is a problem with the network
      * @throws HttpException if the server sends an unexpected response
      */
     public QueryResult query(String path, String q) throws HttpException {
@@ -661,7 +648,6 @@ public class PrecogClient {
      *
      * @param q    quirrel query to excecute
      * @return result as Json string
-     * @throws IOException if there is a problem with the network
      * @throws HttpException if the server sends an unexpected response
      */
     public QueryResult query(String q) throws HttpException {
@@ -697,7 +683,6 @@ public class PrecogClient {
      * @param path the base path to use in the query
      * @param q the query to execute
      * @return a Job ID that can be used with {@link #queryResults(Query)}
-     * @throws IOException if there is a problem with the network
      * @throws HttpException if the server sends an unexpected response
      */
     public Query queryAsync(String path, String q) throws HttpException {
@@ -730,7 +715,6 @@ public class PrecogClient {
      * 
      * @param query the query, as returned by {@link #queryAsync(String,String)}
      * @return the results if the query completed, {@code null} otherwise
-     * @throws IOException if there is a problem with the network
      * @throws HttpException if the server sends an unexpected response
      */
     public QueryResult queryResults(Query query) throws HttpException {
@@ -750,12 +734,11 @@ public class PrecogClient {
     
     /**
      * Downloads the results of a query to a file. This will block until the
-     * query has completed and results are ready. If {@code file} already exists
-     * on the file system, then an {@code IOException} will be thrown.
-     * 
+     * query has completed and results are ready.
+     * <p>
      * This will stream the results to the file, so it is suitable for working
      * with very large result sets.
-     * 
+     * <p>
      * If the query has any errors (or server errors), then {@code false} will
      * be returned. Otherwise, the query results will be downloaded to the File
      * {@code file} and {@code true} will be returned.
