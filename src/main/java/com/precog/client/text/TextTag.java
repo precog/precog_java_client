@@ -1,7 +1,5 @@
 package com.precog.client.text;
 
-import java.util.Date;
-
 import com.precog.client.QueryResult;
 
 /**
@@ -14,12 +12,12 @@ import com.precog.client.QueryResult;
 public class TextTag {
 	
 	private String message;
-	private Date timestamp;
+	private String timestamp;
 	private Position position;
 	
 	public TextTag() { }
 	
-	public TextTag(String message, Date timestamp, Position position) {
+	public TextTag(String message, String timestamp, Position position) {
 		super();
 		this.message = message;
 		this.timestamp = timestamp;
@@ -34,11 +32,11 @@ public class TextTag {
 		this.message = message;
 	}
 	
-	public Date getTimestamp() {
+	public String getTimestamp() {
 		return timestamp;
 	}
 	
-	public void setTimestamp(Date timestamp) {
+	public void setTimestamp(String timestamp) {
 		this.timestamp = timestamp;
 	}
 	

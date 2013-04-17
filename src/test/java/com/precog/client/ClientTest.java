@@ -9,6 +9,7 @@ import com.precog.client.PrecogClient;
 import com.precog.client.QueryResult;
 import com.precog.client.rest.HttpException;
 import com.precog.client.rest.Path;
+import com.precog.client.text.TextTag;
 import com.precog.json.RawStringToJson;
 import com.precog.json.ToJson;
 import com.precog.json.gson.GsonToJson;
@@ -290,6 +291,27 @@ public class ClientTest {
     	List<TestData> data0 = gson.fromJson(reader,
     			(new TypeToken<List<TestData>>() { }).getType());
     	assertEquals(data, data0);
+    }
+    
+    @Test
+    public void testWarningsInQuery() throws HttpException {
+    	QueryResult result = client.query("data := \"unused\" 1234");
+    	List<TextTag> warnings = result.getWarnings();
+    	assertTrue(result.succeeded());
+    	assertTrue(warnings.size() > 0);
+    }
+    
+    @Test
+    public void testErrorsInQuery() throws HttpException {
+    	QueryResult result = client.query("1,2#@");
+    	assertTrue(result.failed());
+    	assertTrue(result.getErrors().size() > 0);
+    }
+    
+    @Test
+    public void testConstructionWithAccountId() throws HttpException {
+    	PrecogClient client0 = new PrecogClient(testApiKey, testAccountId);
+    	assertEquals(new Path("/" + testAccountId), client0.getBasePath());
     }
     
     @Test

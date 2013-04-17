@@ -106,7 +106,7 @@ public class PrecogClient {
         this.service = service;
         this.apiKey = apiKey;
         this.accountId = accountId;
-        this.basePath = basePath == null ? new Path("/") : new Path(basePath);
+        this.basePath = basePath == null ? new Path("/") : new Path("/" + basePath);
         this.gson = gson == null ? new Gson() : gson;
         this.rest = new Rest(service);
     }
@@ -238,7 +238,7 @@ public class PrecogClient {
      * @see PrecogClient#BETA_HTTPS
      */
     public PrecogClient(String apiKey, String accountId) {
-    	this(BETA_HTTPS, apiKey, accountId, null, null);
+    	this(BETA_HTTPS, apiKey, accountId, accountId, null);
     }
 
     /**
@@ -645,7 +645,8 @@ public class PrecogClient {
         	.addParam("q", q)
         	.addParam("format", "detailed")
         	.build();
-        QueryResult result = gson.fromJson(rest.execute(request).asString(), QueryResult.class);
+        String json = rest.execute(request).asString();
+        QueryResult result = gson.fromJson(json, QueryResult.class);
         result.setGson(gson);
         return result;
     }
