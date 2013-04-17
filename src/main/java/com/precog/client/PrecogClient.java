@@ -167,21 +167,6 @@ public class PrecogClient {
     public PrecogClient(URL service, AccountInfo account) {
     	this(service, account.getApiKey(), account.getAccountId(), account.getRootPath());
     }
-    
-    /**
-     * A convenience constructor that uses the default beta API.
-     * Note: during the Precog beta period, you must use the two-argment constructor
-     * and provide the specific Service instance for the storage server URL provided
-     * with your integration instructions.
-     * <p>
-     * This uses the {@link PrecogClient#BETA_HTTPS} (beta.precog.com) service by default.
-     *
-     * @param apiKey The string token that permits storage of records at or below the
-     *               virtual filesystem path to be used
-     */
-    public PrecogClient(String apiKey, Path basePath) {
-    	this(PrecogClient.BETA_HTTPS, apiKey, null);
-    }
 
     /**
      * Factory method to create a Precog client from a Heroku add-on token.
