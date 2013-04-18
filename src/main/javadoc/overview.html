@@ -25,7 +25,7 @@ class Example {
 
     public static void main(String[] args) {
     
-	       //Create a new account. You would probably use an existing account.
+	    //Create a new account. You would probably use an existing account.
         
         AccountInfo account = PrecogClient.createAccount("bob@example.com", "password");
         
@@ -79,7 +79,14 @@ class Example {
         Query query = client.queryAsync("mean((//people).age)");
         result = null;
         while (result == null) {
-        	   result = client.queryResults(query);
+            result = client.queryResults(query);
+        	if (result == null) {
+        		try {
+        	    	Thread.sleep(100)
+        	    } catch (InterruptedException e) {
+        	    	// May want to handle this situation.
+        	    }
+            }
         }
         System.out.println("Mean age: " + result.get(0, Double.class));
     }
