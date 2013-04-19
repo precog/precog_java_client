@@ -24,6 +24,9 @@ public class TextTag {
 		this.position = position;
 	}
 
+	/**
+	 * Returns a message associated with a piece of text.
+	 */
 	public String getMessage() {
 		return message;
 	}
@@ -32,6 +35,9 @@ public class TextTag {
 		this.message = message;
 	}
 	
+	/**
+	 * Returns a timestamp indicating when the text was tagged.
+	 */
 	public String getTimestamp() {
 		return timestamp;
 	}
@@ -40,6 +46,10 @@ public class TextTag {
 		this.timestamp = timestamp;
 	}
 	
+	/**
+	 * Returns the position in the piece of text that the message is referring
+	 * to.
+	 */
 	public Position getPosition() {
 		return position;
 	}

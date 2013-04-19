@@ -15,6 +15,9 @@ public class AppendResult {
     private int skipped;
     private String[] errors;
     
+    /**
+     * Returns {@code true} if the append completed with no errors.
+     */
     public boolean isSuccess() {
     	return failed == 0;
     }

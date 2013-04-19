@@ -6,6 +6,8 @@ package com.precog.client;
  * AccountPlan would like be {@link #FREE}.
  *
  * @author Tom Switzer <switzer@precog.com>
+ * 
+ * @see AccountInfo#getPlan()
  */
 public class AccountPlan {
 	public static AccountPlan FREE = new AccountPlan("Free");

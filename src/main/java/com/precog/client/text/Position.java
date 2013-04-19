@@ -24,6 +24,11 @@ public class Position {
 		this.line = line;
 	}
 	
+	/**
+	 * Returns the actual line from the original piece of text that this
+	 * position points to. This allows the position to have some context, even
+	 * if the original piece of text isn't available.
+	 */
 	public String getText() {
 		return text;
 	}
@@ -32,6 +37,9 @@ public class Position {
 		this.text = text;
 	}
 
+	/**
+	 * Returns the (1-based) column in the text that this position points to.
+	 */
 	public int getColumn() {
 		return column;
 	}
@@ -40,6 +48,9 @@ public class Position {
 		this.column = column;
 	}
 
+	/**
+	 * Returns the (1-based) line in the text that this position points to.
+	 */
 	public int getLine() {
 		return line;
 	}

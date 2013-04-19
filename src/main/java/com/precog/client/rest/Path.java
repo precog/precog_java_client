@@ -2,7 +2,7 @@ package com.precog.client.rest;
 
 /**
  * A simple path representation that conforms to the path syntax
- * of the ReportGrid service API. 
+ * of the Precog service API. 
  *
  * @author Kris Nuttycombe <kris@precog.com>
  * @author Tom Switzer <switzer@precog.com>

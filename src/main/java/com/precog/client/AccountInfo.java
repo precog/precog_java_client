@@ -7,6 +7,11 @@ package com.precog.client;
  *
  * @author Gabriel Claramunt <gabriel@precog.com>
  * @author Tom Switzer <switzer@precog.com>
+ * 
+ * @see PrecogClient#createAccount(String, String)
+ * @see PrecogClient#createAccount(java.net.URL, String, String)
+ * @see PrecogClient#describeAccount(String, String, String)
+ * @see PrecogClient#describeAccount(java.net.URL, String, String, String)
  */
 public class AccountInfo {
     private String accountId;

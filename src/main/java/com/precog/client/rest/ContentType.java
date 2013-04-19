@@ -7,8 +7,6 @@ package com.precog.client.rest;
  * @author Tom Switzer <switzer@precog.com>
  */
 public enum ContentType {
-    XZIP("application/x-gzip"),
-    ZIP("application/zip"),
     JSON("application/json"),
     JSON_STREAM("application/x-json-stream"),
     CSV("text/csv");

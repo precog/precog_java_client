@@ -329,7 +329,6 @@ public class RequestBuilder {
 			this.body = body;
 		}
 
-		@Override
 		public InputStream asInputStream() throws IOException {
 			return body;
 		}

@@ -708,7 +708,7 @@ public class PrecogClient {
         	.addParam("apiKey", apiKey)
         	.build();
         String json = rest.execute(request).asString();
-        if (json != null && json != "") {
+        if (json != null && !json.equals("")) {
         	QueryResult result = gson.fromJson(json, QueryResult.class);
         	result.setGson(gson);
         	return result;

@@ -5,9 +5,7 @@ import java.net.HttpURLConnection;
 import java.net.URL;
 import java.util.Map;
 
-
 import static java.net.URLEncoder.encode;
-import static javax.xml.bind.DatatypeConverter.printBase64Binary;
 
 
 /**
